@@ -85,7 +85,7 @@ int retard; /* valor del retard de moviment, en mil.lisegons */
 
 pthread_t tid[MAX_THREADS]; /*tabla de identificadores de los threads*/
 int fin = 0;
-int cont;
+int cont = -1;
 int tecla;
 int num_opo = 1;
 
@@ -205,52 +205,58 @@ int inicialitza_joc(void)
 /*	-1 ==> la pilota no ha sortit del taulell			*/
 /*	 0 ==> la pilota ha sortit per la porteria esquerra		*/
 /*	>0 ==> la pilota ha sortit per la porteria dreta		*/
-int moure_pilota(void)
+void * moure_pilota(void * null)
 {
   int f_h, c_h, result;
   char rh,rv,rd;
-
-  f_h = pil_pf + pil_vf;		/* posicio hipotetica de la pilota */
-  c_h = pil_pc + pil_vc;
   result = -1;		/* inicialment suposem que la pilota no surt */
-  rh = rv = rd = ' ';
-  if ((f_h != ipil_pf) || (c_h != ipil_pc))
-  {		/* si posicio hipotetica no coincideix amb la pos. actual */
-    if (f_h != ipil_pf)		/* provar rebot vertical */
-    {	rv = win_quincar(f_h,ipil_pc);	/* veure si hi ha algun obstacle */
-	if (rv != ' ')			/* si no hi ha res */
-	{   pil_vf = -pil_vf;		/* canvia velocitat vertical */
-	    f_h = pil_pf+pil_vf;	/* actualitza posicio hipotetica */
-	}
+  do{
+    //printf("Entra bucle pelota\n");
+    f_h = pil_pf + pil_vf;		/* posicio hipotetica de la pilota */
+    c_h = pil_pc + pil_vc;
+    
+    rh = rv = rd = ' ';
+    if ((f_h != ipil_pf) || (c_h != ipil_pc))
+    {		/* si posicio hipotetica no coincideix amb la pos. actual */
+      if (f_h != ipil_pf)		/* provar rebot vertical */
+      {	rv = win_quincar(f_h,ipil_pc);	/* veure si hi ha algun obstacle */
+    if (rv != ' ')			/* si no hi ha res */
+    {   pil_vf = -pil_vf;		/* canvia velocitat vertical */
+        f_h = pil_pf+pil_vf;	/* actualitza posicio hipotetica */
     }
-    if (c_h != ipil_pc)		/* provar rebot horitzontal */
-    {	rh = win_quincar(ipil_pf,c_h);	/* veure si hi ha algun obstacle */
-	if (rh != ' ')			/* si no hi ha res */
-	{    pil_vc = -pil_vc;		/* canvia velocitat horitzontal */
-	     c_h = pil_pc+pil_vc;	/* actualitza posicio hipotetica */
-	}
+      }
+      if (c_h != ipil_pc)		/* provar rebot horitzontal */
+      {	rh = win_quincar(ipil_pf,c_h);	/* veure si hi ha algun obstacle */
+    if (rh != ' ')			/* si no hi ha res */
+    {    pil_vc = -pil_vc;		/* canvia velocitat horitzontal */
+        c_h = pil_pc+pil_vc;	/* actualitza posicio hipotetica */
     }
-    if ((f_h != ipil_pf) && (c_h != ipil_pc))	/* provar rebot diagonal */
-    {	rd = win_quincar(f_h,c_h);
-	if (rd != ' ')				/* si no hi ha obstacle */
-	{    pil_vf = -pil_vf; pil_vc = -pil_vc;	/* canvia velocitats */
-	     f_h = pil_pf+pil_vf;
-	     c_h = pil_pc+pil_vc;		/* actualitza posicio entera */
-	}
+      }
+      if ((f_h != ipil_pf) && (c_h != ipil_pc))	/* provar rebot diagonal */
+      {	rd = win_quincar(f_h,c_h);
+    if (rd != ' ')				/* si no hi ha obstacle */
+    {    pil_vf = -pil_vf; pil_vc = -pil_vc;	/* canvia velocitats */
+        f_h = pil_pf+pil_vf;
+        c_h = pil_pc+pil_vc;		/* actualitza posicio entera */
     }
-    if (win_quincar(f_h,c_h) == ' ')	/* verificar posicio definitiva */
-    {						/* si no hi ha obstacle */
-	win_escricar(ipil_pf,ipil_pc,' ',NO_INV);	/* esborra pilota */
-	pil_pf += pil_vf; pil_pc += pil_vc;
-	ipil_pf = f_h; ipil_pc = c_h;		/* actualitza posicio actual */
-	if ((ipil_pc > 0) && (ipil_pc <= n_col))	/* si no surt */
-		win_escricar(ipil_pf,ipil_pc,'.',INVERS); /* imprimeix pilota */
-	else
-		result = ipil_pc;	/* codi de finalitzacio de partida */
+      }
+      if (win_quincar(f_h,c_h) == ' ')	/* verificar posicio definitiva */
+      {						/* si no hi ha obstacle */
+    win_escricar(ipil_pf,ipil_pc,' ',NO_INV);	/* esborra pilota */
+    pil_pf += pil_vf; pil_pc += pil_vc;
+    ipil_pf = f_h; ipil_pc = c_h;		/* actualitza posicio actual */
+    if ((ipil_pc > 0) && (ipil_pc <= n_col))	/* si no surt */
+      win_escricar(ipil_pf,ipil_pc,'.',INVERS); /* imprimeix pilota */
+    else
+      result = ipil_pc;	/* codi de finalitzacio de partida */
+      }
     }
-  }
-  else { pil_pf += pil_vf; pil_pc += pil_vc; }
-  return(result);
+    else { pil_pf += pil_vf; pil_pc += pil_vc; }
+    cont = result;
+    //printf("Result: %d\n",result);
+  }while((fin != 1));
+  //printf("Sale del bucle de pelota\n");
+  return((void*) (intptr_t)result);
 }
 
 /* funcio per moure la paleta de l'usuari en funcio de la tecla premuda */
@@ -271,9 +277,9 @@ void * mou_paleta_usuari(void * null)
       ipu_pf--;					    /* actualitza posicio */
       win_escricar(ipu_pf,ipu_pc,'0',INVERS);	    /* imprimeix primer bloc */
     }
-  }while((tecla != TEC_RETURN));
-
-  return((void *)0);
+  }while((tecla != TEC_RETURN) && (cont == -1));
+  fin = 1;
+  //return((void *)0);
 }
 
 /* funcio per moure la paleta de l'ordinador autonomament, en funcio de la */
@@ -318,7 +324,7 @@ void *mou_paleta_ordinador(void * indice)
       po_pf += v_pal; /* actualitza posicio vertical real de la paleta */
 
     win_retard(retard);
-  } while (fin != 1);
+  } while((fin != 1));
 
   return ((void *)0);
 }
@@ -345,24 +351,18 @@ int main(int n_args, const char *ll_args[])
     exit(4);                  /* aborta si hi ha algun problema amb taulell */
   //do /********** bucle principal del joc **********/
   int n=0;
-  pthread_create(&tid[MAX_THREADS],NULL,mou_paleta_usuari,NULL);
-  //pthread_create(&tid[MAX_THREADS - 1],NULL,moure_pilota,NULL);
-
-  for(int i = 0; i < num_opo; i++){
-    if(pthread_create(&tid[n],NULL,mou_paleta_ordinador,(void *)(intptr_t)i));
+  for(int i = 0; i < num_opo + 2; i++){
+    if(i == 0)pthread_create(&tid[i],NULL,mou_paleta_usuari,NULL);
+    //if(i == 1)pthread_create(&tid[i],NULL,moure_pilota,NULL);
+    else{
+      pthread_create(&tid[i],NULL,mou_paleta_ordinador,(void *)(intptr_t)i);
+      n++;
+    } 
   }
-  
-  do{
-    cont = moure_pilota();
-    win_retard(retard);
-  } while ((tecla != TEC_RETURN) && (cont==-1));
-  fin = 1; //actualizar condicion de fin del thread
-  win_fi();
 
-  for (int i = 0; i < num_opo; i++)
-  {
-    pthread_join(tid[i], (void **)&t);//(void **) --> indica que es tipo generico
-    printf("el thread (%d) ha fet esto: %d \n",i,t);
+  for(int i = 0; i < n; i++){
+    pthread_join(tid[i],&t);
+    printf("t: %d\n",t);
   }
   win_fi();
 
