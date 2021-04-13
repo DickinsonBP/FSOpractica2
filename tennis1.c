@@ -209,9 +209,8 @@ void * moure_pilota(void * null)
 {
   int f_h, c_h, result;
   char rh,rv,rd;
-  result = -1;		/* inicialment suposem que la pilota no surt */
+  result = cont;		/* inicialment suposem que la pilota no surt */
   do{
-    //printf("Entra bucle pelota\n");
     f_h = pil_pf + pil_vf;		/* posicio hipotetica de la pilota */
     c_h = pil_pc + pil_vc;
     
@@ -252,10 +251,9 @@ void * moure_pilota(void * null)
       }
     }
     else { pil_pf += pil_vf; pil_pc += pil_vc; }
+    win_retard(retard);
     cont = result;
-    //printf("Result: %d\n",result);
   }while((fin != 1));
-  //printf("Sale del bucle de pelota\n");
   return((void*) (intptr_t)result);
 }
 
@@ -350,18 +348,18 @@ int main(int n_args, const char *ll_args[])
   if (inicialitza_joc() != 0) /* intenta crear el taulell de joc */
     exit(4);                  /* aborta si hi ha algun problema amb taulell */
   //do /********** bucle principal del joc **********/
-  int n=0;
+  int n=0;//numero total de threads
   for(int i = 0; i < num_opo + 2; i++){
     if(i == 0)pthread_create(&tid[i],NULL,mou_paleta_usuari,NULL);
-    //if(i == 1)pthread_create(&tid[i],NULL,moure_pilota,NULL);
+    if(i == 1)pthread_create(&tid[i],NULL,moure_pilota,NULL);
     else{
       pthread_create(&tid[i],NULL,mou_paleta_ordinador,(void *)(intptr_t)i);
-      n++;
-    } 
+    }
+    n++;
   }
 
   for(int i = 0; i < n; i++){
-    pthread_join(tid[i],&t);
+    pthread_join(tid[i],(void **)&t);
     printf("t: %d\n",t);
   }
   win_fi();
