@@ -406,16 +406,14 @@ int main(int n_args, const char *ll_args[])
 
   pthread_mutex_init(&mutex,NULL); //inicializar semaforo
 
-  int n = 0;
-  for(int i = 0; i < num_opo + 2; i++){
-    if(i == 0)pthread_create(&tid[i],NULL,mou_paleta_usuari,NULL);
-    if(i == 1)pthread_create(&tid[i],NULL,moure_pilota,NULL);
-    else{
-      pthread_create(&tid[i],NULL,mou_paleta_ordinador,(void *)(intptr_t)i);
-      n++;
-    } 
+  pthread_create(&tid[0],NULL,mou_paleta_usuari,NULL);
+  pthread_create(&tid[1],NULL,moure_pilota,NULL);
+  for(int i = 0; i < num_opo; i++){
+    pthread_create(&tid[i],NULL,mou_paleta_ordinador,(void *)(intptr_t)i);
   }
-  for(int i = 0; i < n; i++){
+  
+  
+  for(int i = 0; i < num_opo + 2; i++){
     pthread_join(tid[i],(void **)&t);
     printf("t: %d\n",t);
   }
