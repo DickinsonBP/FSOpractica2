@@ -1,4 +1,4 @@
-all : winsuport.o tennis0 tennis1 tennis2
+all : winsuport.o tennis2
 
 winsuport.o : winsuport.c winsuport.h
 	gcc -Wall -c winsuport.c -o winsuport.o
@@ -13,4 +13,4 @@ tennis2: tennis2.c winsuport.o winsuport.h
 	gcc -Wall tennis2.c winsuport.o -o tennis2 -lcurses -lpthread
 
 clean: 
-	rm winsuport.o tennis0 tennis1 tennis2
+	rm winsuport.o tennis2
