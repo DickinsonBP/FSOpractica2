@@ -272,7 +272,6 @@ void * moure_pilota(void * null)
     cont = result;
     win_retard(retard);
   }while((fin != 1));
-  //printf("Sale del bucle de pelota\n");
   return((void*) (intptr_t)result);
 }
 
@@ -291,7 +290,7 @@ void * mou_paleta_usuari(void * null)
     if ((tecla == TEC_AMUNT) && (win_quincar(ipu_pf-1,ipu_pc) == ' '))
     {
       win_escricar(ipu_pf+l_pal-1,ipu_pc,' ',NO_INV); /* esborra ultim bloc */
-      ipu_pf--;					      /* actualitza posicio */
+      ipu_pf--;					    /* actualitza posicio */
       win_escricar(ipu_pf,ipu_pc,'0',INVERS);	    /* imprimeix primer bloc */
     }
   }while((tecla != TEC_RETURN) && (cont == -1));
