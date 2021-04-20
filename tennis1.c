@@ -87,7 +87,6 @@ pthread_t tid[MAX_THREADS]; /*tabla de identificadores de los threads*/
 int fin = 0;
 int cont = -1;
 int tecla;
-int num_opo = 1;
 
 /* funcio per realitzar la carrega dels parametres de joc emmagatzemats */
 /* dins un fitxer de text, el nom del qual es passa per referencia en   */
@@ -290,7 +289,7 @@ void *mou_paleta_ordinador(void * indice)
   do
   {
     f_h = po_pf + v_pal; /* posicio hipotetica de la paleta */
-    //f_h += (int)indice * 1.0;
+    f_h += (intptr_t)indice;
     if (f_h != ipo_pf)   /* si pos. hipotetica no coincideix amb pos. actual */
     {
       if (v_pal > 0.0) /* verificar moviment cap avall */
@@ -348,17 +347,11 @@ int main(int n_args, const char *ll_args[])
   if (inicialitza_joc() != 0) /* intenta crear el taulell de joc */
     exit(4);                  /* aborta si hi ha algun problema amb taulell */
   //do /********** bucle principal del joc **********/
-  int n=0;//numero total de threads
-  for(int i = 0; i < num_opo + 2; i++){
-    if(i == 0)pthread_create(&tid[i],NULL,mou_paleta_usuari,NULL);
-    if(i == 1)pthread_create(&tid[i],NULL,moure_pilota,NULL);
-    else{
-      pthread_create(&tid[i],NULL,mou_paleta_ordinador,(void *)(intptr_t)i);
-    }
-    n++;
-  }
+  pthread_create(&tid[0],NULL,mou_paleta_usuari,NULL);
+  pthread_create(&tid[1],NULL,moure_pilota,NULL);
+  pthread_create(&tid[2],NULL,mou_paleta_ordinador,(void *)(intptr_t)0);
 
-  for(int i = 0; i < n; i++){
+  for(int i = 0; i < 3; i++){
     pthread_join(tid[i],(void **)&t);
     printf("t: %d\n",t);
   }
