@@ -153,6 +153,7 @@ void carrega_parametres(const char *nom_fit)
     fclose(fit);
     exit(5);
       }
+      num_opo++;
   }
   
   fclose(fit);			/* fitxer carregat: tot OK! */
@@ -203,7 +204,7 @@ int inicialitza_joc(void)
   {
     for (i=0; i< l_pal; i++)	    /* dibuixar paleta inicialment */
     {	
-      win_escricar(ipo_pf[j] +i, ipo_pc[j], j+1,INVERS);
+      win_escricar(ipo_pf[j] +i, ipo_pc[j], j+'1',INVERS);
     }
     po_pf[j] = ipo_pf[j];		/* fixar valor real paleta ordinador */
   }

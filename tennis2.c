@@ -154,6 +154,7 @@ void carrega_parametres(const char *nom_fit)
     fclose(fit);
     exit(5);
       }
+      num_opo++;
   }
   
   fclose(fit);			/* fitxer carregat: tot OK! */
@@ -204,7 +205,7 @@ int inicialitza_joc(void)
   {
     for (i=0; i< l_pal; i++)	    /* dibuixar paleta inicialment */
     {	
-      win_escricar(ipo_pf[j] +i, ipo_pc[j], j+1,INVERS);
+      win_escricar(ipo_pf[j] +i, ipo_pc[j], j+'1',INVERS);
     }
     po_pf[j] = ipo_pf[j];		/* fixar valor real paleta ordinador */
   }
@@ -238,7 +239,9 @@ void * moure_pilota(void * null)
     {		/* si posicio hipotetica no coincideix amb la pos. actual */
       if (f_h != ipil_pf)		/* provar rebot vertical */
       {	
+        pthread_mutex_lock(&mutex);
         rv = win_quincar(f_h,ipil_pc);	/* veure si hi ha algun obstacle */
+        pthread_mutex_unlock(&mutex);
         if (rv != ' ')			/* si no hi ha res */
         {   
           pil_vf = -pil_vf;		/* canvia velocitat vertical */
@@ -247,7 +250,9 @@ void * moure_pilota(void * null)
       }
       if (c_h != ipil_pc)		/* provar rebot horitzontal */
       {	
+        pthread_mutex_lock(&mutex);
         rh = win_quincar(ipil_pf,c_h);	/* veure si hi ha algun obstacle */
+        pthread_mutex_unlock(&mutex);
         if (rh != ' ')			/* si no hi ha res */
         {    
           pil_vc = -pil_vc;		/* canvia velocitat horitzontal */
@@ -256,7 +261,9 @@ void * moure_pilota(void * null)
       }
       if ((f_h != ipil_pf) && (c_h != ipil_pc))	/* provar rebot diagonal */
       {	
+        pthread_mutex_lock(&mutex);
         rd = win_quincar(f_h,c_h);
+        pthread_mutex_unlock(&mutex);
         if (rd != ' ')				/* si no hi ha obstacle */
         {    
           pil_vf = -pil_vf; pil_vc = -pil_vc;	/* canvia velocitats */
@@ -268,13 +275,18 @@ void * moure_pilota(void * null)
       {						/* si no hi ha obstacle */
         pthread_mutex_lock(&mutex);
         win_escricar(ipil_pf,ipil_pc,' ',NO_INV);	/* esborra pilota */
+        pthread_mutex_unlock(&mutex);
         pil_pf += pil_vf; pil_pc += pil_vc;
         ipil_pf = f_h; ipil_pc = c_h;		/* actualitza posicio actual */
-        if ((ipil_pc > 0) && (ipil_pc <= n_col))	/* si no surt */
+        if ((ipil_pc > 0) && (ipil_pc <= n_col)){
+          /* si no surt */
+          pthread_mutex_lock(&mutex);
           win_escricar(ipil_pf,ipil_pc,'.',INVERS); /* imprimeix pilota */
-        else
-        result = ipil_pc;	/* codi de finalitzacio de partida */
-        pthread_mutex_unlock(&mutex);
+          pthread_mutex_unlock(&mutex);
+        }
+        else{
+          result = ipil_pc;	/* codi de finalitzacio de partida */
+        }
       }
     }
     else { 
