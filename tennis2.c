@@ -90,6 +90,7 @@ int cont = -1;
 int tecla;
 int num_opo = 0;
 int num_pelotas = 1; //siempre sera 1 por defetcto
+int golesOrdenador = 0, golesUsuario = 0;
 
 /* funcio per realitzar la carrega dels parametres de joc emmagatzemats */
 /* dins un fitxer de text, el nom del qual es passa per referencia en   */
@@ -401,7 +402,7 @@ void *mou_paleta_ordinador(void * indice)
 */
 void * marcador(void * null){
   char strin[100];
-  int golesOrdenador = 0, golesUsuario = 0,resultado;
+  int resultado;
 
   pthread_mutex_lock(&mutex);
   sprintf(strin,"Goles Usuario = %d\tGoles Ordenador = %d\tP%d",
@@ -424,7 +425,7 @@ void * marcador(void * null){
       win_escristr(strin);
       cont = -1;
       ipil_pc = ipo_pc[0]-2;
-      ipil_pf = ipo_pf[0]-2;
+      ipil_pf = ipo_pf[0]+3;
 
       pthread_mutex_unlock(&mutex);
     }
@@ -524,11 +525,13 @@ int main(int n_args, const char *ll_args[])
     printf("S'ha aturat el joc amb la tecla RETURN!\n");
   else
   { 
-    /*printf("Cont final: %d\nNum Pelotas Final: %d\n",cont,num_pelotas);*/
-    if (cont == 0)
-      printf("Ha guanyat l'ordinador!\n");
-    else if(cont == 1)
-      printf("Ha guanyat l'usuari!\n");
+    if(golesOrdenador > golesUsuario){
+      printf("Ha ganado el ordenador!!!\n");
+    }else if(golesUsuario > golesOrdenador){
+      printf("Ha ganado el usuario!!!\n");
+    }else{
+      printf("EMPATEEEEEEEEEEEEEE!!!!\n");
+    }
   }
   return (0);
 }
