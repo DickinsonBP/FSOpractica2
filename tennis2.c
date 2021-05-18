@@ -231,10 +231,10 @@ void * moure_pilota(void * null)
   result = -1;		/* inicialment suposem que la pilota no surt */
   //printf("genera pelota\n");
 
-  //pthread_mutex_lock(&mutex);
-  //pil_pf = ipil_pf; pil_pc = ipil_pc;	/* fixar valor real posicio pilota */
-  //win_escricar(ipil_pf, ipil_pc, '.',INVERS);	/* dibuix inicial pilota */
-  //pthread_mutex_unlock(&mutex);
+  pthread_mutex_lock(&mutex);
+  pil_pf = ipil_pf; pil_pc = ipil_pc;	/* fixar valor real posicio pilota */
+  win_escricar(ipil_pf, ipil_pc, '.',INVERS);	/* dibuix inicial pilota */
+  pthread_mutex_unlock(&mutex);
 
   do{
 
@@ -306,7 +306,11 @@ void * moure_pilota(void * null)
     pthread_mutex_lock(&mutex);
     cont = result;
     pthread_mutex_unlock(&mutex);
-  }while(result == -1);
+  }while((result == -1) && (fin !=1));
+
+  pthread_mutex_lock(&mutex);
+  num_pelotas--;
+  pthread_mutex_unlock(&mutex);
   return((void*)0);
 }
 
@@ -396,12 +400,12 @@ void *mou_paleta_ordinador(void * indice)
   rutina para mostrar el marcador
 */
 void * marcador(void * null){
-  char strin[50];
+  char strin[100];
   int golesOrdenador = 0, golesUsuario = 0,resultado;
 
-  sprintf(strin,"Goles Usuario = %d\tGoles Ordenador = %d\t\t",
-	golesUsuario,golesOrdenador);
   pthread_mutex_lock(&mutex);
+  sprintf(strin,"Goles Usuario = %d\tGoles Ordenador = %d\tP%d",
+	golesUsuario,golesOrdenador,num_pelotas);
   win_escristr(strin);
   pthread_mutex_unlock(&mutex);
 
@@ -415,11 +419,12 @@ void * marcador(void * null){
       golesUsuario++;
       pthread_mutex_lock(&mutex);
 
-      sprintf(strin,"Goles Usuario = %d\tGoles Ordenador = %d\t\t",
-      golesUsuario,golesOrdenador);
+      sprintf(strin,"Goles Usuario = %d\tGoles Ordenador = %d\tP%d",
+	    golesUsuario,golesOrdenador,num_pelotas);
       win_escristr(strin);
-      num_pelotas--;
       cont = -1;
+      ipil_pc = ipo_pc[0]-2;
+      ipil_pf = ipo_pf[0]-2;
 
       pthread_mutex_unlock(&mutex);
     }
@@ -429,15 +434,16 @@ void * marcador(void * null){
       golesOrdenador++;
       pthread_mutex_lock(&mutex);
 
-      sprintf(strin,"Goles Usuario = %d\tGoles Ordenador = %d\t\t",
-      golesUsuario,golesOrdenador);
+      sprintf(strin,"Goles Usuario = %d\tGoles Ordenador = %d\tP%d",
+	    golesUsuario,golesOrdenador,num_pelotas);
       win_escristr(strin);
-      num_pelotas--;
       cont = -1;
-      
+      ipil_pc = ipu_pc+1;
+      ipil_pf = ipu_pf+2;
+
       pthread_mutex_unlock(&mutex);
     }
-  }while((fin != -1) && (num_pelotas > 0));
+  }while((fin != 1) && (num_pelotas > 0));
   
   return ((void *)0);
 }
@@ -465,7 +471,6 @@ int main(int n_args, const char *ll_args[])
     //por defecto
     retard = 100;
   }
-
   //printf("Inicializa juego llamada en main: %d\n",inicialitza_joc());
   if (inicialitza_joc() != 0) /* intenta crear el taulell de joc */
     exit(4);                  /* aborta si hi ha algun problema amb taulell */
@@ -519,7 +524,7 @@ int main(int n_args, const char *ll_args[])
     printf("S'ha aturat el joc amb la tecla RETURN!\n");
   else
   { 
-    printf("Cont final: %d\n",cont);
+    /*printf("Cont final: %d\nNum Pelotas Final: %d\n",cont,num_pelotas);*/
     if (cont == 0)
       printf("Ha guanyat l'ordinador!\n");
     else if(cont == 1)
