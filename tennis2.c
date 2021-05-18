@@ -362,8 +362,10 @@ void *mou_paleta_ordinador(void * indice)
         {
           pthread_mutex_lock(&mutex);
           win_escricar(ipo_pf[indc], ipo_pc[indc], ' ', NO_INV); /* esborra primer bloc */
+          pthread_mutex_unlock(&mutex);
           po_pf[indc] += v_pal[indc];
           ipo_pf[indc] = po_pf[indc];                                        /* actualitza posicio */
+          pthread_mutex_lock(&mutex);
           win_escricar(ipo_pf[indc] + l_pal - 1, ipo_pc[indc], index, INVERS); /* impr. ultim bloc */
           pthread_mutex_unlock(&mutex);
         }
@@ -378,8 +380,10 @@ void *mou_paleta_ordinador(void * indice)
         {
           pthread_mutex_lock(&mutex);
           win_escricar(ipo_pf[indc] + l_pal - 1, ipo_pc[indc], ' ', NO_INV); /* esbo. ultim bloc */
+          pthread_mutex_unlock(&mutex);
           po_pf[indc] += v_pal[indc];
           ipo_pf[indc] = po_pf[indc];                            /* actualitza posicio */
+          pthread_mutex_lock(&mutex);
           win_escricar(ipo_pf[indc], ipo_pc[indc], index, INVERS); /* impr. primer bloc */
           pthread_mutex_unlock(&mutex);
         }
