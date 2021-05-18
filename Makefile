@@ -13,7 +13,8 @@ tennis2: tennis2.c winsuport.o winsuport.h
 	gcc -Wall tennis2.c winsuport.o -o tennis2 -lcurses -lpthread
 
 tennis3: tennis2.c winsuport.o winsuport2.h
-	gcc -Wall tennis2.c winsuport.o -o tennis2 -lcurses -lpthread
+	gcc -Wall tennis2.c winsuport2.o -o tennis3 -lcurses -lpthread
+	gcc pal_ord3.c winsuport2.o -o pal_ord3 -lcurses
 
 clean: 
 	rm winsuport.o tennis3
