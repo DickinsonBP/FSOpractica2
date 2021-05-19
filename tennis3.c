@@ -97,6 +97,7 @@ int tecla;
 int num_opo = 0;
 int *num_pelotas; 
 int golesOrdenador = 0, golesUsuario = 0;
+int retwin;
 
 /* funcio per realitzar la carrega dels parametres de joc emmagatzemats */
 /* dins un fitxer de text, el nom del qual es passa per referencia en   */
@@ -170,7 +171,7 @@ void carrega_parametres(const char *nom_fit)
 /* funcio per inicialitar les variables i visualitzar l'estat inicial del joc */
 int inicialitza_joc(void)
 {
-  int i, i_port, f_port, retwin;
+  int i, i_port, f_port;
   char strin[51];
 
   retwin = win_ini(&n_fil,&n_col,'+',INVERS);   /* intenta crear taulell */
@@ -399,8 +400,12 @@ int main(int n_args, const char *ll_args[])
 {
   /* variables locals */
   int t;
-  int id_numPelotas, id_fin;
-  char a8[20], a9[20];
+  int id_numPelotas, id_fin, id_win;
+  void *p_win;
+  char a1[20],a2[20],a3[20],a4[20],a5[20],a6[20],a7[20],a8[20], a9[20],a10[20],a11[20],a12[20];
+  int i, n_proc, t_total;
+  int n=0;
+
   if ((n_args != 3) && (n_args != 4))
   {
     fprintf(stderr, "Comanda: tennis2 fit_param num_pelotas [retard]\n");
@@ -408,6 +413,7 @@ int main(int n_args, const char *ll_args[])
   }
   carrega_parametres(ll_args[1]);
   id_numPelotas = ini_mem(sizeof(int));
+  num_pelotas = map_mem(id_numPelotas);
   
   if (n_args == 4){
     retard = atoi(ll_args[3]);
@@ -422,18 +428,24 @@ int main(int n_args, const char *ll_args[])
   }
   id_fin= ini_mem(sizeof(int));
   *fin = 0;
+  fin = map_mem(id_fin);
   sprintf(a8, "%i", id_numPelotas);
   sprintf(a9, "%i", id_fin);
   //printf("Inicializa juego llamada en main: %d\n",inicialitza_joc());
   if (inicialitza_joc() != 0) /* intenta crear el taulell de joc */
     exit(4);                  /* aborta si hi ha algun problema amb taulell */
   //do /********** bucle principal del joc **********/
+  id_win =ini_mem(retwin);
+  p_win= map_mem(id_win);
+  sprintf(a10, "%i", id_win);
+  sprintf(a11, "%i", n_fil);
+  sprintf(a12, "%i", n_col);
+  win_set(p_win,n_fil,n_col);
 
   pthread_mutex_init(&mutex,NULL); //inicializar semaforo
-
-  int i, n_proc, t_total;
-  int n=0;
-  char a1[20];
+  
+  sprintf(a4, "%i", l_pal);
+  sprintf(a6, "%i", retard);
   n_proc=num_opo;
   for ( i = 0; i < n_proc; i++)
   {
@@ -441,7 +453,11 @@ int main(int n_args, const char *ll_args[])
 	if (tpid[n] == (pid_t) 0)		/* branca del fill */
 	{
 	    sprintf(a1,"%i",(i+1));
-	    execlp("./pal_ord3", "pal_ord3", a1, ipo_pf[i], ipo_pc[i], l_pal, v_pal[i], po_pf[i], retard, a8, (char *)0);
+      sprintf(a2, "%i", ipo_pf[i]);
+      sprintf(a3, "%i", ipo_pc[i]);
+      sprintf(a5, "%i", v_pal[i]);
+      sprintf(a7, "%i", po_pf[i]);
+	    execlp("./pal_ord3", "pal_ord3", a1, a2, a3, a4, a5, a6, a7 ,a8, a9, a10, a11, a12, (char *)0);
 	    fprintf(stderr,"error: no puc executar el process fill \'mp_car\'\n");
 	    exit(0);
 	}

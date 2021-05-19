@@ -64,5 +64,5 @@ int main(int n_args, char *ll_args[])
     win_retard(retard);
   } while((fin != 1) && (num_pelotas > 0));
 
-  return ((void *)0);
+  return (0);
 }
