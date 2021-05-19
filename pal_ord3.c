@@ -33,14 +33,10 @@ int main(int n_args, char *ll_args[])
       {
         if (win_quincar(f_h + l_pal - 1, ipo_pf) == ' ') /* si no hi ha obstacle */
         {
-          pthread_mutex_lock(&mutex);
           win_escricar(ipo_pf, ipo_pc, ' ', NO_INV); /* esborra primer bloc */
-          pthread_mutex_unlock(&mutex);
           po_pf += v_pal;
           ipo_pf = po_pf;                                        /* actualitza posicio */
-          pthread_mutex_lock(&mutex);
           win_escricar(ipo_pf + l_pal - 1, ipo_pc, index, INVERS); /* impr. ultim bloc */
-          pthread_mutex_unlock(&mutex);
         }
         else{
           /* si hi ha obstacle, canvia el sentit del moviment */
@@ -51,14 +47,10 @@ int main(int n_args, char *ll_args[])
       {
         if (win_quincar(f_h, ipo_pc) == ' ') /* si no hi ha obstacle */
         {
-          pthread_mutex_lock(&mutex);
           win_escricar(ipo_pf + l_pal - 1, ipo_pc, ' ', NO_INV); /* esbo. ultim bloc */
-          pthread_mutex_unlock(&mutex);
           po_pf += v_pal;
           ipo_pf = po_pf;                            /* actualitza posicio */
-          pthread_mutex_lock(&mutex);
           win_escricar(ipo_pf, ipo_pc, index, INVERS); /* impr. primer bloc */
-          pthread_mutex_unlock(&mutex);
         }
         else{
           /* si hi ha obstacle, canvia el sentit del moviment */

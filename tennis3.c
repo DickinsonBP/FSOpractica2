@@ -1,6 +1,6 @@
 /*****************************************************************************/
 /*									     */
-/*				     Tennis2.c				     */
+/*				     Tennis3.c				     */
 /*									     */
 /*  Programa inicial d'exemple per a les practiques 2 i 3 de ISO.	     */
 /*     Es tracta del joc del tennis: es dibuixa un camp de joc rectangular    */
@@ -53,10 +53,14 @@
 /*****************************************************************************/
 
 #include <stdio.h> /* incloure definicions de funcions estandard */
-#include <stdlib.h>
-#include "winsuport2.h" /* incloure definicions de funcions propies */
 #include <pthread.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include "memoria.h"
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include "winsuport2.h" /* incloure definicions de funcions propies */
 
 #define MIN_FIL 7 /* definir limits de variables globals */
 #define MAX_FIL 25
@@ -67,6 +71,7 @@
 #define MAX_VEL 1.0
 
 #define MAX_PROCS	10
+#define MAX_THREADS 2
 
 /* variables globals */
 int n_fil, n_col, m_por; /* dimensions del taulell i porteries */
@@ -84,13 +89,13 @@ float pil_vf, pil_vc; /* velocitat de la pilota, en valor real*/
 
 int retard; /* valor del retard de moviment, en mil.lisegons */
 pid_t tpid[MAX_PROCS];		/* taula d'identificadors dels processos fill */
-//pthread_t tid[MAX_THREADS]; /*tabla de identificadores de los threads*/
+pthread_t tid[MAX_THREADS]; /*tabla de identificadores de los threads*/
 pthread_mutex_t mutex= PTHREAD_MUTEX_INITIALIZER;	/* crear un sem. Global*/
-int fin = 0;
+int *fin;
 int cont = -1;
 int tecla;
 int num_opo = 0;
-int num_pelotas; 
+int *num_pelotas; 
 int golesOrdenador = 0, golesUsuario = 0;
 
 /* funcio per realitzar la carrega dels parametres de joc emmagatzemats */
@@ -165,7 +170,7 @@ void carrega_parametres(const char *nom_fit)
 /* funcio per inicialitar les variables i visualitzar l'estat inicial del joc */
 int inicialitza_joc(void)
 {
-  int i, j, i_port, f_port, retwin;
+  int i, i_port, f_port, retwin;
   char strin[51];
 
   retwin = win_ini(&n_fil,&n_col,'+',INVERS);   /* intenta crear taulell */
@@ -299,10 +304,10 @@ void * moure_pilota(void * null)
     pthread_mutex_lock(&mutex);
     cont = result;
     pthread_mutex_unlock(&mutex);
-  }while((result == -1) && (fin !=1));
+  }while((result == -1) && (*fin !=1));
 
   pthread_mutex_lock(&mutex);
-  num_pelotas--;
+  *num_pelotas = *num_pelotas-1;
   pthread_mutex_unlock(&mutex);
   return((void*)0);
 }
@@ -331,8 +336,8 @@ void * mou_paleta_usuari(void * null)
       win_escricar(ipu_pf,ipu_pc,'0',INVERS);	    /* imprimeix primer bloc */
       pthread_mutex_unlock(&mutex);
     }
-  }while((tecla != TEC_RETURN) && (num_pelotas > 0));
-  fin = 1;
+  }while((tecla != TEC_RETURN) && (*num_pelotas > 0));
+  *fin = 1;
   return((void *)0);
 }
 
@@ -345,7 +350,7 @@ void * marcador(void * null){
 
   pthread_mutex_lock(&mutex);
   sprintf(strin,"Goles Usuario = %d\tGoles Ordenador = %d\tP%d",
-	golesUsuario,golesOrdenador,num_pelotas);
+	golesUsuario,golesOrdenador,*num_pelotas);
   win_escristr(strin);
   pthread_mutex_unlock(&mutex);
 
@@ -360,7 +365,7 @@ void * marcador(void * null){
       pthread_mutex_lock(&mutex);
 
       sprintf(strin,"Goles Usuario = %d\tGoles Ordenador = %d\tP%d",
-	    golesUsuario,golesOrdenador,num_pelotas);
+	    golesUsuario,golesOrdenador,*num_pelotas);
       win_escristr(strin);
       cont = -1;
       ipil_pc = ipo_pc[0]-2;
@@ -375,7 +380,7 @@ void * marcador(void * null){
       pthread_mutex_lock(&mutex);
 
       sprintf(strin,"Goles Usuario = %d\tGoles Ordenador = %d\tP%d",
-	    golesUsuario,golesOrdenador,num_pelotas);
+	    golesUsuario,golesOrdenador,*num_pelotas);
       win_escristr(strin);
       cont = -1;
       ipil_pc = ipu_pc+1;
@@ -383,7 +388,7 @@ void * marcador(void * null){
 
       pthread_mutex_unlock(&mutex);
     }
-  }while((fin != 1) && (num_pelotas > 0));
+  }while((*fin != 1) && (*num_pelotas > 0));
   
   return ((void *)0);
 }
@@ -394,23 +399,31 @@ int main(int n_args, const char *ll_args[])
 {
   /* variables locals */
   int t;
+  int id_numPelotas, id_fin;
+  char a8[20], a9[20];
   if ((n_args != 3) && (n_args != 4))
   {
     fprintf(stderr, "Comanda: tennis2 fit_param num_pelotas [retard]\n");
     exit(1);
   }
   carrega_parametres(ll_args[1]);
+  id_numPelotas = ini_mem(sizeof(int));
+  
   if (n_args == 4){
     retard = atoi(ll_args[3]);
-    num_pelotas = atoi(ll_args[2]);
+    *num_pelotas = atoi(ll_args[2]);
   } 
   else if(n_args == 3){
     retard = 100;
-    num_pelotas = atoi(ll_args[2]);
+    *num_pelotas = atoi(ll_args[2]);
   }else{
     //por defecto
     retard = 100;
   }
+  id_fin= ini_mem(sizeof(int));
+  *fin = 0;
+  sprintf(a8, "%i", id_numPelotas);
+  sprintf(a9, "%i", id_fin);
   //printf("Inicializa juego llamada en main: %d\n",inicialitza_joc());
   if (inicialitza_joc() != 0) /* intenta crear el taulell de joc */
     exit(4);                  /* aborta si hi ha algun problema amb taulell */
@@ -418,33 +431,55 @@ int main(int n_args, const char *ll_args[])
 
   pthread_mutex_init(&mutex,NULL); //inicializar semaforo
 
-  int n = 0;
-  for(int i = 0; i < num_opo; i++){
-    pthread_create(&tid[i],NULL,mou_paleta_ordinador,(void *)(intptr_t)i);
-    n++;
+  int i, n_proc, t_total;
+  int n=0;
+  char a1[20];
+  n_proc=num_opo;
+  for ( i = 0; i < n_proc; i++)
+  {
+	tpid[n] = fork();		/* crea un nou proces */
+	if (tpid[n] == (pid_t) 0)		/* branca del fill */
+	{
+	    sprintf(a1,"%i",(i+1));
+	    execlp("./pal_ord3", "pal_ord3", a1, ipo_pf[i], ipo_pc[i], l_pal, v_pal[i], po_pf[i], retard, a8, (char *)0);
+	    fprintf(stderr,"error: no puc executar el process fill \'mp_car\'\n");
+	    exit(0);
+	}
+	else if (tpid[n] > 0) n++;		/* branca del pare */
   }
-  
-  pthread_create(&tid[n +1],NULL,mou_paleta_usuari,NULL);
-  pthread_create(&tid[n +2],NULL,marcador,NULL);
+
+  pthread_create(&tid[0],NULL,mou_paleta_usuari,NULL);
+  pthread_create(&tid[1],NULL,marcador,NULL);
+
+  printf("He creat %d processos fill, espero que acabin!\n\n",n);
+
 
   int hayPelota = 0;
-  while(num_pelotas > 0){
+  while(*num_pelotas > 0){
     if(cont == -1 && hayPelota == 0){
       //generar nueva pelota
       hayPelota=1;  
-      pthread_create(&tid[n + 3],NULL,moure_pilota,NULL);
+      pthread_create(&tid[3],NULL,moure_pilota,NULL);
     }else{
       //hay gol
-      pthread_join(tid[n + 3],(void **)&t);
+      pthread_join(tid[3],(void **)&t);
       hayPelota=0;
     }
 
   }
   
-  for(int i = 0; i < num_opo + 2; i++){
-    pthread_join(tid[i],(void **)&t);
-    printf("t: %d\n",t);
+  for (i = 0; i < n; i++)
+  {
+	waitpid(tpid[i],&t,0);	/* espera finalitzacio d'un fill */
+	t = t >> 8;			/* normalitza resultat	*/
+ 	t_total += t;
   }
+  
+  pthread_join(tid[0],(void **)&t);
+  pthread_join(tid[1],(void **)&t);
+  elim_mem(id_numPelotas);
+  elim_mem(id_fin);
+
   win_fi();
 
   pthread_mutex_destroy(&mutex);//destruir semaforo
