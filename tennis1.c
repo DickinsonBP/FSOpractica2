@@ -153,6 +153,7 @@ void carrega_parametres(const char *nom_fit)
     fclose(fit);
     exit(5);
       }
+      num_opo++;
   }
   
   fclose(fit);			/* fitxer carregat: tot OK! */
