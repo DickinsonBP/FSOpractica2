@@ -55,8 +55,8 @@
 #include <sys/wait.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <stdint.h>
+#include <unistd.h>
 #include "memoria.h"
 #include "winsuport2.h"
 
@@ -98,8 +98,9 @@ int num_opo = 0;
 int num_pelotas = 1; //siempre sera 1 por defetcto
 int golesOrdenador = 0, golesUsuario = 0;
 int retwin;
-void *p_win;
+
 int id_win;
+void *p_win;
 
 /* funcio per realitzar la carrega dels parametres de joc emmagatzemats */
 /* dins un fitxer de text, el nom del qual es passa per referencia en   */
@@ -196,8 +197,7 @@ int inicialitza_joc(void)
   id_win = ini_mem(retwin);
   p_win = map_mem(id_win);
 
-  win_set(p_win,n_fil,n_col); 
-
+  win_set(p_win,n_fil,n_col);
 
   i_port = n_fil/2 - m_por/2;	    /* crea els forats de la porteria */
   if (n_fil%2 == 0) i_port--;
@@ -504,22 +504,23 @@ int main(int n_args, const char *ll_args[])
   //printf("Inicializa juego llamada en main: %d\n",inicialitza_joc());
   if (inicialitza_joc() != 0) /* intenta crear el taulell de joc */
     exit(4);                  /* aborta si hi ha algun problema amb taulell */
-  /********** bucle principal del joc **********/
-  
+  /********** bucle principal del joc **********/ 
+
   pthread_mutex_init(&mutex,NULL); //inicializar semaforo
 
   int n = 0;
-  for(int i=0; i<num_opo; i++){
+  for(int i = 0; i < num_opo; i++){
     tpid[n] = fork();
     if(tpid[n] == 0){
       //proceso hijo
-      sprintf(a1,"%i",1);
+      sprintf(a1,"%i",(i+1));
       execlp("./pal_ord3","pal_ord3",a1,(char*)0);
     }else if(tpid[n] > 0){
       //proceso padre
       n++;
-    }
+   }
   }
+  
 
   for(int i = 0; i < num_opo; i++){
     pthread_create(&tid[i],NULL,mou_paleta_ordinador,(void *)(intptr_t)i);
