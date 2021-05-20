@@ -98,6 +98,8 @@ int num_opo = 0;
 int num_pelotas = 1; //siempre sera 1 por defetcto
 int golesOrdenador = 0, golesUsuario = 0;
 int retwin;
+void *p_win;
+int id_win;
 
 /* funcio per realitzar la carrega dels parametres de joc emmagatzemats */
 /* dins un fitxer de text, el nom del qual es passa per referencia en   */
@@ -190,6 +192,12 @@ int inicialitza_joc(void)
      }
      return(retwin);
   }
+
+  id_win = ini_mem(retwin);
+  p_win = map_mem(id_win);
+
+  win_set(p_win,n_fil,n_col); 
+
 
   i_port = n_fil/2 - m_por/2;	    /* crea els forats de la porteria */
   if (n_fil%2 == 0) i_port--;
@@ -473,9 +481,8 @@ void * marcador(void * null){
 int main(int n_args, const char *ll_args[])
 {
   /* variables locals */
-  int t,id_win;
+  int t;
   char a1[20];
-  void *p_win;
 
   if ((n_args != 3) && (n_args != 4))
   {
@@ -498,11 +505,7 @@ int main(int n_args, const char *ll_args[])
   if (inicialitza_joc() != 0) /* intenta crear el taulell de joc */
     exit(4);                  /* aborta si hi ha algun problema amb taulell */
   /********** bucle principal del joc **********/
-  id_win = ini_mem(retwin);
-  p_win = map_mem(id_win);
-
-  win_set(p_win,n_fil,n_col); 
-
+  
   pthread_mutex_init(&mutex,NULL); //inicializar semaforo
 
   int n = 0;
