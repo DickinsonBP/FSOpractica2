@@ -199,7 +199,6 @@ int inicialitza_joc(void)
 	win_escricar(i,n_col-1,' ',NO_INV);
   }
 
-
   ipu_pf = n_fil/2; ipu_pc = 3;		/* inicialitzar pos. paletes */
   if (ipu_pf+l_pal >= n_fil-3) ipu_pf = 1;
 
@@ -223,6 +222,7 @@ int inicialitza_joc(void)
   sprintf(strin,"Tecles: \'%c\'-> amunt, \'%c\'-> avall, RETURN-> sortir.",
 		TEC_AMUNT, TEC_AVALL);
   win_escristr(strin);
+
   return(0);
 }
 
@@ -312,6 +312,7 @@ void * moure_pilota(void * null)
     win_retard(retard);
     pthread_mutex_lock(&mutex);
     cont = result;
+    win_update();
     pthread_mutex_unlock(&mutex);
   }while((result == -1) && (fin !=1));
 
@@ -345,6 +346,9 @@ void * mou_paleta_usuari(void * null)
       win_escricar(ipu_pf,ipu_pc,'0',INVERS);	    /* imprimeix primer bloc */
       pthread_mutex_unlock(&mutex);
     }
+    pthread_mutex_lock(&mutex);
+    win_update();
+    pthread_mutex_unlock(&mutex);
   }while((tecla != TEC_RETURN) && (num_pelotas > 0));
   fin = 1;
   return((void *)0);
@@ -403,6 +407,9 @@ void *mou_paleta_ordinador(void * indice)
       po_pf[indc] += v_pal[indc]; /* actualitza posicio vertical real de la paleta */
     }
     win_retard(retard);
+    pthread_mutex_lock(&mutex);
+    win_update();
+    pthread_mutex_unlock(&mutex);
   } while((fin != 1) && (num_pelotas > 0));
 
   return ((void *)0);
@@ -454,6 +461,7 @@ void * marcador(void * null){
 
       pthread_mutex_unlock(&mutex);
     }
+    //win_update();
   }while((fin != 1) && (num_pelotas > 0));
   
   return ((void *)0);
@@ -489,16 +497,15 @@ int main(int n_args, const char *ll_args[])
   if (inicialitza_joc() != 0) /* intenta crear el taulell de joc */
     exit(4);                  /* aborta si hi ha algun problema amb taulell */
   /********** bucle principal del joc **********/
-  /*id_win = ini_mem(retwin);
+  id_win = ini_mem(retwin);
   p_win = map_mem(id_win);
 
-  win_set(p_win,n_fil,n_col);
-  win_update();*/
+  win_set(p_win,n_fil,n_col); 
 
   pthread_mutex_init(&mutex,NULL); //inicializar semaforo
 
   int n = 0;
-  /*tpid[n] = fork();
+  tpid[n] = fork();
   if(tpid[n] == 0){
     //proceso hijo
     sprintf(a1,"%i",1);
@@ -506,10 +513,7 @@ int main(int n_args, const char *ll_args[])
   }else if(tpid[n] > 0){
     //proceso padre
     n++;
-  }*/
-
-  
-
+  }
 
   for(int i = 0; i < num_opo; i++){
     pthread_create(&tid[i],NULL,mou_paleta_ordinador,(void *)(intptr_t)i);
@@ -528,22 +532,12 @@ int main(int n_args, const char *ll_args[])
     }else{
       //hay gol
       pthread_join(tid[n + 3],(void **)&t);
-      //printf("t del bucle: %d\n",t);
-      //printf("Contador en el bucle: %d\n",cont);
-      /*if(cont == 0){
-        //marca el usuario
-        
-      }else if(cont == 1){
-        //marca el ordenador
-        ipil_pc = ipu_pc;
-        ipil_pf = ipu_pf;
-      }*/
       hayPelota=0;
     }
     win_update();
     win_retard(20);
   }
-  
+
   for(int i = 0; i < num_opo + 2; i++){
     pthread_join(tid[i],(void **)&t);
     printf("t: %d\n",t);
