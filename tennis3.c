@@ -55,6 +55,7 @@
 #include <sys/wait.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <unistd.h>
 #include "memoria.h"
 #include "winsuport2.h"
@@ -505,15 +506,18 @@ int main(int n_args, const char *ll_args[])
   pthread_mutex_init(&mutex,NULL); //inicializar semaforo
 
   int n = 0;
-  tpid[n] = fork();
-  if(tpid[n] == 0){
-    //proceso hijo
-    sprintf(a1,"%i",1);
-    execlp("./pal_ord3","pal_ord3",a1,(char*)0);
-  }else if(tpid[n] > 0){
-    //proceso padre
-    n++;
+  for(int i = 0; i < num_opo; i++){
+    tpid[n] = fork();
+    if(tpid[n] == 0){
+      //proceso hijo
+      sprintf(a1,"%i",(i+1));
+      execlp("./pal_ord3","pal_ord3",a1,(char*)0);
+    }else if(tpid[n] > 0){
+      //proceso padre
+      n++;
+   }
   }
+  
 
   for(int i = 0; i < num_opo; i++){
     pthread_create(&tid[i],NULL,mou_paleta_ordinador,(void *)(intptr_t)i);
