@@ -52,15 +52,14 @@
 /*	6  ==>  no s'ha pogut crear el camp de joc (no pot iniciar CURSES)   */
 /*****************************************************************************/
 
-#include <stdio.h> /* incloure definicions de funcions estandard */
-#include <stdlib.h>
-#include <pthread.h>
-#include <stdint.h>
-#include <sys/types.h>
 #include <sys/wait.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
-#include "winsuport.h" /* incloure definicions de funcions propies */
 #include "memoria.h"
+#include "winsuport2.h"
+
+#include <pthread.h>
 
 #define MIN_FIL 7 /* definir limits de variables globals */
 #define MAX_FIL 25
@@ -70,26 +69,26 @@
 #define MIN_VEL -1.0
 #define MAX_VEL 1.0
 
+#define MAX_THREADS 10
 #define MAX_PROCS 10
-#define MAX_TRHEADS 10
 
 /* variables globals */
 int n_fil, n_col, m_por; /* dimensions del taulell i porteries */
 int l_pal;               /* longitud de les paletes */
-float v_pal[MAX_TRHEADS-1];             /* velocitat de la paleta del programa */
+float v_pal[MAX_THREADS-1];             /* velocitat de la paleta del programa */
 
 int ipu_pf, ipu_pc; /* posicio del la paleta d'usuari */
-int ipo_pf[MAX_TRHEADS-1]; /* fila del la paleta de l'ordinador */
-int ipo_pc[MAX_TRHEADS-1]; /* columna del la paleta de l'ordinador */
-float po_pf[MAX_TRHEADS-1];        /* pos. vertical de la paleta de l'ordinador, en valor real */
+int ipo_pf[MAX_THREADS-1]; /* fila del la paleta de l'ordinador */
+int ipo_pc[MAX_THREADS-1]; /* columna del la paleta de l'ordinador */
+float po_pf[MAX_THREADS-1];        /* pos. vertical de la paleta de l'ordinador, en valor real */
 
 int ipil_pf, ipil_pc; /* posicio de la pilota, en valor enter */
 float pil_pf, pil_pc; /* posicio de la pilota, en valor real */
 float pil_vf, pil_vc; /* velocitat de la pilota, en valor real*/
 
 int retard; /* valor del retard de moviment, en mil.lisegons */
-pthread_t tid[MAX_TRHEADS]; /*tabla de identificadores de los threads*/
-pid_t tpid [MAX_PROCS];
+pthread_t tid[MAX_THREADS]; /*tabla de identificadores de los threads*/
+pid_t tpid[MAX_PROCS];
 pthread_mutex_t mutex= PTHREAD_MUTEX_INITIALIZER;	/* crear un sem. Global*/
 int fin = 0;
 int cont = -1;
@@ -97,6 +96,7 @@ int tecla;
 int num_opo = 0;
 int num_pelotas = 1; //siempre sera 1 por defetcto
 int golesOrdenador = 0, golesUsuario = 0;
+int retwin;
 
 /* funcio per realitzar la carrega dels parametres de joc emmagatzemats */
 /* dins un fitxer de text, el nom del qual es passa per referencia en   */
@@ -170,7 +170,7 @@ void carrega_parametres(const char *nom_fit)
 /* funcio per inicialitar les variables i visualitzar l'estat inicial del joc */
 int inicialitza_joc(void)
 {
-  int i, j, i_port, f_port, retwin;
+  int i, j, i_port, f_port;
   char strin[51];
 
   retwin = win_ini(&n_fil,&n_col,'+',INVERS);   /* intenta crear taulell */
@@ -426,7 +426,7 @@ void * marcador(void * null){
     pthread_mutex_unlock(&mutex);
     if(resultado > 0){
       //marca el usuario
-      //printf("Contador marcador: %d\n",cont);
+      printf("Contador marcador: %d\n",cont);
       golesUsuario++;
       pthread_mutex_lock(&mutex);
 
@@ -441,7 +441,7 @@ void * marcador(void * null){
     }
     if(resultado == 0){
       //marca el ordenador
-      //printf("Contador marcador: %d\n",cont);
+      printf("Contador marcador: %d\n",cont);
       golesOrdenador++;
       pthread_mutex_lock(&mutex);
 
@@ -464,21 +464,9 @@ void * marcador(void * null){
 int main(int n_args, const char *ll_args[])
 {
   /* variables locals */
-  int t;
-  char a1[20],a2[20];
-
-  pid_t pid;
-  pid = fork();
-
-  if(pid == (pid_t)0){
-    //proceso hijo
-    sprintf(a1,"%i",1);
-    if(execlp("./pal_ord3","pal_ord3",a1, (char *)0) == -1){
-      fprintf(stderr,"No he podido hacer el proceso hijo");
-      printf("No he podido hacer el proceso hijo");
-    }else printf("He creado al proceso hijo\n");
-  }else if(pid > 0) printf("He creado el proceso padre\n");
-
+  int t,id_win;
+  char a1[20];
+  void *p_win;
 
   if ((n_args != 3) && (n_args != 4))
   {
@@ -497,15 +485,32 @@ int main(int n_args, const char *ll_args[])
     //por defecto
     retard = 100;
   }
-
   //printf("Inicializa juego llamada en main: %d\n",inicialitza_joc());
   if (inicialitza_joc() != 0) /* intenta crear el taulell de joc */
     exit(4);                  /* aborta si hi ha algun problema amb taulell */
   /********** bucle principal del joc **********/
+  /*id_win = ini_mem(retwin);
+  p_win = map_mem(id_win);
+
+  win_set(p_win,n_fil,n_col);
+  win_update();*/
 
   pthread_mutex_init(&mutex,NULL); //inicializar semaforo
 
   int n = 0;
+  /*tpid[n] = fork();
+  if(tpid[n] == 0){
+    //proceso hijo
+    sprintf(a1,"%i",1);
+    execlp("./pal_ord3","pal_ord3",a1,(char*)0);
+  }else if(tpid[n] > 0){
+    //proceso padre
+    n++;
+  }*/
+
+  
+
+
   for(int i = 0; i < num_opo; i++){
     pthread_create(&tid[i],NULL,mou_paleta_ordinador,(void *)(intptr_t)i);
     n++;
@@ -523,9 +528,20 @@ int main(int n_args, const char *ll_args[])
     }else{
       //hay gol
       pthread_join(tid[n + 3],(void **)&t);
+      //printf("t del bucle: %d\n",t);
+      //printf("Contador en el bucle: %d\n",cont);
+      /*if(cont == 0){
+        //marca el usuario
+        
+      }else if(cont == 1){
+        //marca el ordenador
+        ipil_pc = ipu_pc;
+        ipil_pf = ipu_pf;
+      }*/
       hayPelota=0;
     }
-
+    win_update();
+    win_retard(20);
   }
   
   for(int i = 0; i < num_opo + 2; i++){
@@ -536,8 +552,9 @@ int main(int n_args, const char *ll_args[])
 
   pthread_mutex_destroy(&mutex);//destruir semaforo
 
-  if (tecla == TEC_RETURN)
+  if (tecla == TEC_RETURN){
     printf("S'ha aturat el joc amb la tecla RETURN!\n");
+  }
   else
   { 
     if(golesOrdenador > golesUsuario){
@@ -548,6 +565,5 @@ int main(int n_args, const char *ll_args[])
       printf("EMPATEEEEEEEEEEEEEE!!!!\n");
     }
   }
-
   return (0);
 }

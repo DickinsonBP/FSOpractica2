@@ -1,33 +1,45 @@
-#include <stdio.h> /* incloure definicions de funcions estandard */
-#include <stdlib.h>
-#include <pthread.h>
-#include <stdint.h>
-#include <sys/types.h>
 #include <sys/wait.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
-#include "winsuport.h" /* incloure definicions de funcions propies */
 #include "memoria.h"
+#include "winsuport2.h"
+
+#include <pthread.h>
 
 int main(int n_args, char *ll_args[])
 {
-  FILE *f;
-  int i, indice;
+    /*if (n_args < 2)
+    {   fprintf(stderr,"proces: pal_ord3 indice ipo_pf ipo_pc l_pal v_pal retard po_pf id_numPelotas id_fin id_win n_fil n_col\n");
+        exit(0);
+    }*/
+    int indice = atoi(ll_args[1]);
+    /*int ipo_pf = atoi(ll_args[2]);
+    int ipo_pc = atoi(ll_args[3]);
+    int l_pal = atoi(ll_args[4]);
+    float v_pal = atof(ll_args[5]);
+    int retard = atoi(ll_args[6]);
+    float po_pf = atof(ll_args[7]);
+    int id_numPelotas = atoi(ll_args[8]);
+    int id_fin = atoi(ll_args[9]);
+    int id_win = atoi(ll_args[1]);
+    int n_fil = atoi(ll_args[2]);
+    int n_col = atoi(ll_args[3]);
+    int f_h;*/
+    //char index = (intptr_t)indice + '1';
+    /*void *p_win;
 
-  indice = atoi(ll_args[1]);
-  f = fopen("prueba.txt","a");
+    p_win = map_mem(id_win);
 
-  if(f == NULL){
-    printf("El fichero no se ha podido abrir en modo escritura\n");
-    return -1;
-  }else{
-    i = 0;
-    while (!feof(f) && i < 100)
-    {
-      fprintf(f,"Indice: %d\tIteracion: %d\n",indice, i);
-      i++;
+    win_set(p_win,n_fil,n_col);*/
+
+    FILE *f;
+    f = fopen("error","a");
+    if(f != NULL){
+      //se ha abierto bien
+      fprintf(f,"Identificador: %d\n",indice);
     }
-    
-  }
-  fclose(f);
-  return 0;
+
+
+  return (0);
 }
