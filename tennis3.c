@@ -516,6 +516,13 @@ int main(int n_args, const char *ll_args[])
 
   pthread_mutex_destroy(&mutex);//destruir semaforo
 
+  for(int i = 0; i < num_opo; i++){
+    elim_mem(id_ipopf[i]);
+    elim_mem(id_ipopc[i]);
+  }
+  elim_mem(id_numPelotas);
+  elim_mem(id_fin);
+
   if (tecla == TEC_RETURN){
     printf("S'ha aturat el joc amb la tecla RETURN!\n");
   }
