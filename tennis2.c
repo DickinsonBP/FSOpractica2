@@ -428,8 +428,8 @@ void * marcador(void * null){
 	    golesUsuario,golesOrdenador,num_pelotas);
       win_escristr(strin);
       cont = -1;
-      ipil_pc = ipo_pc[0]-2;
-      ipil_pf = ipo_pf[0]+3;
+      ipil_pc = ipo_pc[num_opo-1]-2;
+      ipil_pf = ipo_pf[num_opo-1]+3;
 
       pthread_mutex_unlock(&mutex);
     }
