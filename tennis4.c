@@ -1,6 +1,6 @@
 /*****************************************************************************/
 /*									     */
-/*				     Tennis2.c				     */
+/*				     Tennis4.c				     */
 /*									     */
 /*  Programa inicial d'exemple per a les practiques 2 i 3 de ISO.	     */
 /*     Es tracta del joc del tennis: es dibuixa un camp de joc rectangular    */
@@ -52,11 +52,15 @@
 /*	6  ==>  no s'ha pogut crear el camp de joc (no pot iniciar CURSES)   */
 /*****************************************************************************/
 
-#include <stdio.h> /* incloure definicions de funcions estandard */
+#include <sys/wait.h>
+#include <stdio.h>
 #include <stdlib.h>
-#include "winsuport.h" /* incloure definicions de funcions propies */
-#include <pthread.h>
 #include <stdint.h>
+#include <unistd.h>
+#include "memoria.h"
+#include "winsuport2.h"
+
+#include <pthread.h>
 
 #define MIN_FIL 7 /* definir limits de variables globals */
 #define MAX_FIL 25
@@ -67,6 +71,7 @@
 #define MAX_VEL 1.0
 
 #define MAX_THREADS 10
+#define MAX_PROCS 10
 
 /* variables globals */
 int n_fil, n_col, m_por; /* dimensions del taulell i porteries */
@@ -84,13 +89,19 @@ float pil_vf, pil_vc; /* velocitat de la pilota, en valor real*/
 
 int retard; /* valor del retard de moviment, en mil.lisegons */
 pthread_t tid[MAX_THREADS]; /*tabla de identificadores de los threads*/
+pid_t tpid[MAX_PROCS];
 pthread_mutex_t mutex= PTHREAD_MUTEX_INITIALIZER;	/* crear un sem. Global*/
-int fin = 0;
+int *fin;
 int cont = -1;
 int tecla;
 int num_opo = 0;
 int num_pelotas = 1; //siempre sera 1 por defetcto
 int golesOrdenador = 0, golesUsuario = 0;
+int retwin;
+
+int id_win, id_ipopc[MAX_PROCS], id_ipopf[MAX_PROCS];
+void *p_win;
+int *memPelotas, *mem_ipopc[MAX_PROCS], *mem_ipopf[MAX_PROCS];
 
 /* funcio per realitzar la carrega dels parametres de joc emmagatzemats */
 /* dins un fitxer de text, el nom del qual es passa per referencia en   */
@@ -141,6 +152,11 @@ void carrega_parametres(const char *nom_fit)
   /*cargar posiciones y velocidades de las paletas del ordenador*/
   while (!feof(fit))
   {
+    id_ipopf[num_opo]=ini_mem(sizeof(int));
+    mem_ipopf[num_opo]=map_mem(id_ipopf[num_opo]);
+    id_ipopc[num_opo]=ini_mem(sizeof(int));
+    mem_ipopc[num_opo]=map_mem(id_ipopc[num_opo]);
+
     fscanf(fit,"%d %d %f\n",&ipo_pf[num_opo],&ipo_pc[num_opo],&v_pal[num_opo]);
     if ((ipo_pf[num_opo] < 1) || (ipo_pf[num_opo]+l_pal > n_fil-2) ||
     (ipo_pc[num_opo] < 5) || (ipo_pc[num_opo] > n_col-2) ||
@@ -155,16 +171,19 @@ void carrega_parametres(const char *nom_fit)
     fclose(fit);
     exit(5);
       }
+      *mem_ipopf[num_opo]=ipo_pf[num_opo];
+      *mem_ipopc[num_opo]=ipo_pc[num_opo];
       num_opo++;
+      
   }
-  
+
   fclose(fit);			/* fitxer carregat: tot OK! */
 }
 
 /* funcio per inicialitar les variables i visualitzar l'estat inicial del joc */
 int inicialitza_joc(void)
 {
-  int i, j, i_port, f_port, retwin;
+  int i, j, i_port, f_port;
   char strin[51];
 
   retwin = win_ini(&n_fil,&n_col,'+',INVERS);   /* intenta crear taulell */
@@ -184,6 +203,11 @@ int inicialitza_joc(void)
      return(retwin);
   }
 
+  id_win = ini_mem(retwin);
+  p_win = map_mem(id_win);
+
+  win_set(p_win,n_fil,n_col);
+
   i_port = n_fil/2 - m_por/2;	    /* crea els forats de la porteria */
   if (n_fil%2 == 0) i_port--;
   if (i_port == 0) i_port=1;
@@ -192,7 +216,6 @@ int inicialitza_joc(void)
   {	win_escricar(i,0,' ',NO_INV);
 	win_escricar(i,n_col-1,' ',NO_INV);
   }
-
 
   ipu_pf = n_fil/2; ipu_pc = 3;		/* inicialitzar pos. paletes */
   if (ipu_pf+l_pal >= n_fil-3) ipu_pf = 1;
@@ -213,7 +236,7 @@ int inicialitza_joc(void)
 
   pil_pf = ipil_pf; pil_pc = ipil_pc;	/* fixar valor real posicio pilota */
   win_escricar(ipil_pf, ipil_pc, '.',INVERS);	/* dibuix inicial pilota */
-  
+
   return(0);
 }
 
@@ -303,11 +326,13 @@ void * moure_pilota(void * null)
     win_retard(retard);
     pthread_mutex_lock(&mutex);
     cont = result;
+    win_update();
     pthread_mutex_unlock(&mutex);
-  }while((result == -1) && (fin !=1));
+  }while((result == -1) && (*fin !=1));
 
   pthread_mutex_lock(&mutex);
   num_pelotas--;
+  *memPelotas = num_pelotas;
   pthread_mutex_unlock(&mutex);
   return((void*)0);
 }
@@ -336,68 +361,15 @@ void * mou_paleta_usuari(void * null)
       win_escricar(ipu_pf,ipu_pc,'0',INVERS);	    /* imprimeix primer bloc */
       pthread_mutex_unlock(&mutex);
     }
+    pthread_mutex_lock(&mutex);
+    win_update();
+    pthread_mutex_unlock(&mutex);
   }while((tecla != TEC_RETURN) && (num_pelotas > 0));
-  fin = 1;
+  *fin = 1;
   return((void *)0);
 }
 
-/* funcio per moure la paleta de l'ordinador autonomament, en funcio de la */
-/* velocitat de la paleta (variable global v_pal) */
-void *mou_paleta_ordinador(void * indice)
-{
-  int f_h;
-  char index = (intptr_t)indice + '1';
-  int indc = (intptr_t)indice;
-  do
-  {
-    f_h = po_pf[indc] + v_pal[indc]; /* posicio hipotetica de la paleta */
-    if (f_h != ipo_pf[indc])   /* si pos. hipotetica no coincideix amb pos. actual */
-    {
-      if (v_pal[indc] > 0.0) /* verificar moviment cap avall */
-      {
-        if (win_quincar(f_h + l_pal - 1, ipo_pf[indc]) == ' ') /* si no hi ha obstacle */
-        {
-          pthread_mutex_lock(&mutex);
-          win_escricar(ipo_pf[indc], ipo_pc[indc], ' ', NO_INV); /* esborra primer bloc */
-          pthread_mutex_unlock(&mutex);
-          po_pf[indc] += v_pal[indc];
-          ipo_pf[indc] = po_pf[indc];                                        /* actualitza posicio */
-          pthread_mutex_lock(&mutex);
-          win_escricar(ipo_pf[indc] + l_pal - 1, ipo_pc[indc], index, INVERS); /* impr. ultim bloc */
-          pthread_mutex_unlock(&mutex);
-        }
-        else{
-          /* si hi ha obstacle, canvia el sentit del moviment */
-          v_pal[indc] = -v_pal[indc];   
-        }
-      }
-      else /* verificar moviment cap amunt */
-      {
-        if (win_quincar(f_h, ipo_pc[indc]) == ' ') /* si no hi ha obstacle */
-        {
-          pthread_mutex_lock(&mutex);
-          win_escricar(ipo_pf[indc] + l_pal - 1, ipo_pc[indc], ' ', NO_INV); /* esbo. ultim bloc */
-          pthread_mutex_unlock(&mutex);
-          po_pf[indc] += v_pal[indc];
-          ipo_pf[indc] = po_pf[indc];                            /* actualitza posicio */
-          pthread_mutex_lock(&mutex);
-          win_escricar(ipo_pf[indc], ipo_pc[indc], index, INVERS); /* impr. primer bloc */
-          pthread_mutex_unlock(&mutex);
-        }
-        else{
-          /* si hi ha obstacle, canvia el sentit del moviment */
-          v_pal[indc] = -v_pal[indc];
-        } 
-      } 
-    }
-    else{
-      po_pf[indc] += v_pal[indc]; /* actualitza posicio vertical real de la paleta */
-    }
-    win_retard(retard);
-  } while((fin != 1) && (num_pelotas > 0));
 
-  return ((void *)0);
-}
 /*
   rutina para mostrar el marcador
 */
@@ -406,7 +378,7 @@ void * marcador(void * null){
   int resultado;
 
   pthread_mutex_lock(&mutex);
-  sprintf(strin,"Goles Usuario = %d\tGoles Ordenador = %d Pelotas:%d",
+  sprintf(strin,"Goles Usuario = %d Goles Ordenador = %d Pelotas:%d",
 	golesUsuario,golesOrdenador,num_pelotas);
   win_escristr(strin);
   pthread_mutex_unlock(&mutex);
@@ -417,22 +389,20 @@ void * marcador(void * null){
     pthread_mutex_unlock(&mutex);
     if(resultado > 0){
       //marca el usuario
-      //printf("Contador marcador: %d\n",cont);
       golesUsuario++;
       pthread_mutex_lock(&mutex);
 
-      sprintf(strin,"Goles Usuario = %d\tGoles Ordenador = %d Pelotas:%d",
+      sprintf(strin,"Goles Usuario = %d Goles Ordenador = %d Pelotas:%d",
 	    golesUsuario,golesOrdenador,num_pelotas);
       win_escristr(strin);
       cont = -1;
-      ipil_pc = ipo_pc[num_opo-1]-2;
-      ipil_pf = ipo_pf[num_opo-1]+3;
+      ipil_pc = *mem_ipopc[num_opo-1]-2;
+      ipil_pf = *mem_ipopf[num_opo-1]+3;
 
       pthread_mutex_unlock(&mutex);
     }
     if(resultado == 0){
       //marca el ordenador
-      //printf("Contador marcador: %d\n",cont);
       golesOrdenador++;
       pthread_mutex_lock(&mutex);
 
@@ -445,7 +415,8 @@ void * marcador(void * null){
 
       pthread_mutex_unlock(&mutex);
     }
-  }while((fin != 1) && (num_pelotas > 0));
+    //win_update();
+  }while((*fin != 1) && (num_pelotas > 0));
   
   return ((void *)0);
 }
@@ -455,7 +426,9 @@ void * marcador(void * null){
 int main(int n_args, const char *ll_args[])
 {
   /* variables locals */
-  int t;
+  int t, id_numPelotas, id_fin;
+  char a1[20], a2[20], a3[20], a4[20], a5[20], a6[20], a7[20], a8[20], a9[20], a10[20], a11[20], a12[20];
+
   if ((n_args != 3) && (n_args != 4))
   {
     fprintf(stderr, "Comanda: tennis2 fit_param num_pelotas [retard]\n");
@@ -471,49 +444,70 @@ int main(int n_args, const char *ll_args[])
     num_pelotas = atoi(ll_args[2]);
   }else{
     //por defecto
+    num_pelotas =1;
     retard = 100;
   }
   //printf("Inicializa juego llamada en main: %d\n",inicialitza_joc());
   if (inicialitza_joc() != 0) /* intenta crear el taulell de joc */
     exit(4);                  /* aborta si hi ha algun problema amb taulell */
-  //do /********** bucle principal del joc **********/
+  /********** bucle principal del joc **********/ 
 
   pthread_mutex_init(&mutex,NULL); //inicializar semaforo
 
+  //convertir datos del campo en strin para procesos hijos
+  sprintf(a2, "%i", id_win);
+  sprintf(a3, "%i", n_fil);
+  sprintf(a4, "%i", n_col);
+  sprintf(a9, "%i", l_pal);
+  sprintf(a10, "%i", retard);
+  
+  id_numPelotas = ini_mem(sizeof(int));
+  memPelotas = map_mem(id_numPelotas);
+  *memPelotas=num_pelotas;
+
+  id_fin = ini_mem(sizeof(int));
+  fin = map_mem(id_fin);
+  *fin = 0;
+  
+  sprintf(a11, "%i", id_numPelotas);
+  sprintf(a12, "%i", id_fin);
+
   int n = 0;
   for(int i = 0; i < num_opo; i++){
-    pthread_create(&tid[i],NULL,mou_paleta_ordinador,(void *)(intptr_t)i);
-    n++;
+    tpid[n] = fork();
+    if(tpid[n] == 0){
+      //proceso hijo
+      sprintf(a1,"%i",(i+1));
+      sprintf(a5, "%i", id_ipopf[i]);
+      sprintf(a6, "%i", id_ipopc[i]);
+      sprintf(a7, "%f", v_pal[i]);
+      sprintf(a8, "%f", po_pf[i]);
+      execlp("./pal_ord4","pal_ord4",a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, (char*)0);
+    }else if(tpid[n] > 0){
+      //proceso padre
+      n++;
+   }
   }
   
-  pthread_create(&tid[n +1],NULL,mou_paleta_usuari,NULL);
-  pthread_create(&tid[n +2],NULL,marcador,NULL);
+  pthread_create(&tid[0],NULL,mou_paleta_usuari,NULL);
+  pthread_create(&tid[1],NULL,marcador,NULL);
 
   int hayPelota = 0;
   while(num_pelotas > 0){
     if(cont == -1 && hayPelota == 0){
       //generar nueva pelota
       hayPelota=1;  
-      pthread_create(&tid[n + 3],NULL,moure_pilota,NULL);
+      pthread_create(&tid[2],NULL,moure_pilota,NULL);
     }else{
       //hay gol
-      pthread_join(tid[n + 3],(void **)&t);
-      //printf("t del bucle: %d\n",t);
-      //printf("Contador en el bucle: %d\n",cont);
-      /*if(cont == 0){
-        //marca el usuario
-        
-      }else if(cont == 1){
-        //marca el ordenador
-        ipil_pc = ipu_pc;
-        ipil_pf = ipu_pf;
-      }*/
-
+      pthread_join(tid[2],(void **)&t);
       hayPelota=0;
+      //*memPelotas=num_pelotas;
     }
-
+    win_update();
+    win_retard(20);
   }
-  
+
   for(int i = 0; i < num_opo + 2; i++){
     pthread_join(tid[i],(void **)&t);
     printf("t: %d\n",t);
@@ -522,8 +516,9 @@ int main(int n_args, const char *ll_args[])
 
   pthread_mutex_destroy(&mutex);//destruir semaforo
 
-  if (tecla == TEC_RETURN)
+  if (tecla == TEC_RETURN){
     printf("S'ha aturat el joc amb la tecla RETURN!\n");
+  }
   else
   { 
     if(golesOrdenador > golesUsuario){

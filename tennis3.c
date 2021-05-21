@@ -237,10 +237,6 @@ int inicialitza_joc(void)
   pil_pf = ipil_pf; pil_pc = ipil_pc;	/* fixar valor real posicio pilota */
   win_escricar(ipil_pf, ipil_pc, '.',INVERS);	/* dibuix inicial pilota */
 
-  sprintf(strin,"Tecles: \'%c\'-> amunt, \'%c\'-> avall, RETURN-> sortir.",
-		TEC_AMUNT, TEC_AVALL);
-  win_escristr(strin);
-
   return(0);
 }
 
@@ -382,7 +378,7 @@ void * marcador(void * null){
   int resultado;
 
   pthread_mutex_lock(&mutex);
-  sprintf(strin,"Goles Usuario = %d Goles Ordenador = %d Pil%d",
+  sprintf(strin,"Goles Usuario = %d Goles Ordenador = %d Pelotas:%d",
 	golesUsuario,golesOrdenador,num_pelotas);
   win_escristr(strin);
   pthread_mutex_unlock(&mutex);
@@ -393,11 +389,10 @@ void * marcador(void * null){
     pthread_mutex_unlock(&mutex);
     if(resultado > 0){
       //marca el usuario
-      printf("Contador marcador: %d\n",cont);
       golesUsuario++;
       pthread_mutex_lock(&mutex);
 
-      sprintf(strin,"Goles Usuario = %d Goles Ordenador = %d Pil%d",
+      sprintf(strin,"Goles Usuario = %d Goles Ordenador = %d Pelotas:%d",
 	    golesUsuario,golesOrdenador,num_pelotas);
       win_escristr(strin);
       cont = -1;
@@ -408,11 +403,10 @@ void * marcador(void * null){
     }
     if(resultado == 0){
       //marca el ordenador
-      printf("Contador marcador: %d\n",cont);
       golesOrdenador++;
       pthread_mutex_lock(&mutex);
 
-      sprintf(strin,"Goles Usuario = %d\tGoles Ordenador = %d\tP%d",
+      sprintf(strin,"Goles Usuario = %d\tGoles Ordenador = %d Pelotas:%d",
 	    golesUsuario,golesOrdenador,num_pelotas);
       win_escristr(strin);
       cont = -1;
