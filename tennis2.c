@@ -165,7 +165,6 @@ void carrega_parametres(const char *nom_fit)
 int inicialitza_joc(void)
 {
   int i, j, i_port, f_port, retwin;
-  char strin[51];
 
   retwin = win_ini(&n_fil,&n_col,'+',INVERS);   /* intenta crear taulell */
 

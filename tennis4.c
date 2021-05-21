@@ -57,8 +57,10 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <unistd.h>
+
 #include "memoria.h"
 #include "winsuport2.h"
+#include "semafor.h"
 
 #include <pthread.h>
 
@@ -426,8 +428,8 @@ void * marcador(void * null){
 int main(int n_args, const char *ll_args[])
 {
   /* variables locals */
-  int t, id_numPelotas, id_fin;
-  char a1[20], a2[20], a3[20], a4[20], a5[20], a6[20], a7[20], a8[20], a9[20], a10[20], a11[20], a12[20];
+  int t, id_numPelotas, id_fin, id_semafor;
+  char a1[20], a2[20], a3[20], a4[20], a5[20], a6[20], a7[20], a8[20], a9[20], a10[20], a11[20], a12[20], a13[20];
 
   if ((n_args != 3) && (n_args != 4))
   {
@@ -472,6 +474,10 @@ int main(int n_args, const char *ll_args[])
   sprintf(a11, "%i", id_numPelotas);
   sprintf(a12, "%i", id_fin);
 
+
+  id_semafor = ini_sem(1); /*crear semaforo inicialmente a 1*/
+  sprintf(a13,"%i",id_semafor);
+
   int n = 0;
   for(int i = 0; i < num_opo; i++){
     tpid[n] = fork();
@@ -482,7 +488,7 @@ int main(int n_args, const char *ll_args[])
       sprintf(a6, "%i", id_ipopc[i]);
       sprintf(a7, "%f", v_pal[i]);
       sprintf(a8, "%f", po_pf[i]);
-      execlp("./pal_ord4","pal_ord4",a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, (char*)0);
+      execlp("./pal_ord4","pal_ord4",a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, (char*)0);
     }else if(tpid[n] > 0){
       //proceso padre
       n++;
@@ -523,6 +529,7 @@ int main(int n_args, const char *ll_args[])
   }
   elim_mem(id_numPelotas);
   elim_mem(id_fin);
+  elim_sem(id_semafor);
 
   if (tecla == TEC_RETURN){
     printf("S'ha aturat el joc amb la tecla RETURN!\n");

@@ -19,12 +19,15 @@ tennis3: tennis3.c winsuport2.o winsuport2.h memoria.o
 	gcc tennis3.c winsuport2.o memoria.o -o tennis3 -lcurses -lpthread
 	gcc pal_ord3.c winsuport2.o memoria.o -o pal_ord3 -lcurses
 
-tennis4: tennis4.c winsuport2.c winsuport2.h memoria.o
-	gcc tennis4.c winsuport2.o memoria.o -o tennis4 -lcurses -lpthread
-	gcc pal_ord4.c winsuport2.o memoria.o -o pal_ord4 -lcurses
+tennis4: tennis4.c winsuport2.c winsuport2.h memoria.o semafor.o
+	gcc tennis4.c winsuport2.o memoria.o semafor.o -o tennis4 -lcurses -lpthread
+	gcc pal_ord4.c winsuport2.o memoria.o semafor.o -o pal_ord4 -lcurses
 
 memoria.o : memoria.c memoria.h
 	gcc -c -Wall memoria.c -o memoria.o 
+
+semafor.o : semafor.c semafor.h
+	gcc -c -Wall semafor.c -o semafor.o 
 	
 clean: 
 	rm winsuport2.o tennis4 pal_ord4 memoria.o
