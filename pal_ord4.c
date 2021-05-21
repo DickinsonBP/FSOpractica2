@@ -5,17 +5,18 @@
 #include <unistd.h>
 #include "memoria.h"
 #include "winsuport2.h"
+#include "semafor.h"
 
 #include <pthread.h>
 
 int main(int n_args, char *ll_args[])
 {
-    int indice;
+    int indice, id_semafor;
     int f_h, n_fil, n_col, id_win, retard, l_pal, id_numPelotas, id_fin, *p_numPelotas, *p_fin, *p_ipopf, *p_ipopc, id_ipopf, id_ipopc;
     float v_pal, po_pf;
     void *p_win;
 
-    if (n_args < 10)
+    if (n_args < 14)
     {
       fprintf(stderr, "error parametros\n");
       exit(0);
@@ -38,6 +39,7 @@ int main(int n_args, char *ll_args[])
     p_numPelotas = map_mem(id_numPelotas);
     id_fin = atoi(ll_args[12]);
     p_fin = map_mem(id_fin);
+    id_semafor = atoi(ll_args[13]);
 
     if (p_win == (int*)-1)
     {
@@ -56,7 +58,9 @@ int main(int n_args, char *ll_args[])
     }
     
     /*crear acceso a la ventana del proceso padre*/
+    waitS(id_semafor);
     win_set(p_win,n_fil,n_col);
+    signalS(id_semafor);
 
     char index = (intptr_t)indice + '0';
     int indc = (intptr_t)indice;
@@ -70,10 +74,14 @@ int main(int n_args, char *ll_args[])
       {
         if (win_quincar(f_h + l_pal - 1, *p_ipopf) == ' ') /* si no hi ha obstacle */
         {
+          waitS(id_semafor);
           win_escricar(*p_ipopf, *p_ipopc, ' ', NO_INV); /* esborra primer bloc */
+          signalS(id_semafor);
           po_pf += v_pal;
           *p_ipopf = po_pf;                                        /* actualitza posicio */
+          waitS(id_semafor);
           win_escricar(*p_ipopf + l_pal - 1, *p_ipopc, index, INVERS); /* impr. ultim bloc */
+          signalS(id_semafor);
         }
         else{
           /* si hi ha obstacle, canvia el sentit del moviment */
@@ -84,10 +92,14 @@ int main(int n_args, char *ll_args[])
       {
         if (win_quincar(f_h, *p_ipopc) == ' ') /* si no hi ha obstacle */
         {
+          waitS(id_semafor);
           win_escricar(*p_ipopf + l_pal - 1, *p_ipopc, ' ', NO_INV); /* esbo. ultim bloc */
+          signalS(id_semafor);
           po_pf += v_pal;
           *p_ipopf = po_pf;                            /* actualitza posicio */
+          waitS(id_semafor);
           win_escricar(*p_ipopf, *p_ipopc, index, INVERS); /* impr. primer bloc */
+          signalS(id_semafor);
         }
         else{
           /* si hi ha obstacle, canvia el sentit del moviment */
