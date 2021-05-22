@@ -92,7 +92,6 @@ float pil_vf, pil_vc; /* velocitat de la pilota, en valor real*/
 int retard; /* valor del retard de moviment, en mil.lisegons */
 pthread_t tid[MAX_THREADS]; /*tabla de identificadores de los threads*/
 pid_t tpid[MAX_PROCS];
-pthread_mutex_t mutex= PTHREAD_MUTEX_INITIALIZER;	/* crear un sem. Global*/
 int *fin;
 int cont = -1;
 int tecla;
@@ -100,7 +99,7 @@ int num_opo = 0;
 int num_pelotas = 1; //siempre sera 1 por defetcto
 int golesOrdenador = 0, golesUsuario = 0;
 int retwin;
-
+int id_semafor;
 int id_win, id_ipopc[MAX_PROCS], id_ipopf[MAX_PROCS];
 void *p_win;
 int *memPelotas, *mem_ipopc[MAX_PROCS], *mem_ipopf[MAX_PROCS];
@@ -254,10 +253,10 @@ void * moure_pilota(void * null)
   result = -1;		/* inicialment suposem que la pilota no surt */
   //printf("genera pelota\n");
 
-  pthread_mutex_lock(&mutex);
+  waitS(id_semafor);
   pil_pf = ipil_pf; pil_pc = ipil_pc;	/* fixar valor real posicio pilota */
   win_escricar(ipil_pf, ipil_pc, '.',INVERS);	/* dibuix inicial pilota */
-  pthread_mutex_unlock(&mutex);
+  signalS(id_semafor);
 
   do{
 
@@ -269,9 +268,7 @@ void * moure_pilota(void * null)
     {		/* si posicio hipotetica no coincideix amb la pos. actual */
       if (f_h != ipil_pf)		/* provar rebot vertical */
       {	
-        pthread_mutex_lock(&mutex);
         rv = win_quincar(f_h,ipil_pc);	/* veure si hi ha algun obstacle */
-        pthread_mutex_unlock(&mutex);
         if (rv != ' ')			/* si no hi ha res */
         {   
           pil_vf = -pil_vf;		/* canvia velocitat vertical */
@@ -280,9 +277,7 @@ void * moure_pilota(void * null)
       }
       if (c_h != ipil_pc)		/* provar rebot horitzontal */
       {	
-        pthread_mutex_lock(&mutex);
         rh = win_quincar(ipil_pf,c_h);	/* veure si hi ha algun obstacle */
-        pthread_mutex_unlock(&mutex);
         if (rh != ' ')			/* si no hi ha res */
         {    
           pil_vc = -pil_vc;		/* canvia velocitat horitzontal */
@@ -291,9 +286,7 @@ void * moure_pilota(void * null)
       }
       if ((f_h != ipil_pf) && (c_h != ipil_pc))	/* provar rebot diagonal */
       {	
-        pthread_mutex_lock(&mutex);
         rd = win_quincar(f_h,c_h);
-        pthread_mutex_unlock(&mutex);
         if (rd != ' ')				/* si no hi ha obstacle */
         {    
           pil_vf = -pil_vf; pil_vc = -pil_vc;	/* canvia velocitats */
@@ -301,20 +294,18 @@ void * moure_pilota(void * null)
           c_h = pil_pc+pil_vc;		/* actualitza posicio entera */
         }
       }
-      pthread_mutex_lock(&mutex);
       if (win_quincar(f_h,c_h) == ' ')	/* verificar posicio definitiva */
       {						/* si no hi ha obstacle */
-      pthread_mutex_unlock(&mutex);
-        pthread_mutex_lock(&mutex);
+        waitS(id_semafor);
         win_escricar(ipil_pf,ipil_pc,' ',NO_INV);	/* esborra pilota */
-        pthread_mutex_unlock(&mutex);
+        signalS(id_semafor);
         pil_pf += pil_vf; pil_pc += pil_vc;
         ipil_pf = f_h; ipil_pc = c_h;		/* actualitza posicio actual */
         if ((ipil_pc > 0) && (ipil_pc <= n_col)){
           /* si no surt */
-          pthread_mutex_lock(&mutex);
+          waitS(id_semafor);
           win_escricar(ipil_pf,ipil_pc,'.',INVERS); /* imprimeix pilota */
-          pthread_mutex_unlock(&mutex);
+          signalS(id_semafor);
         }
         else{
           result = ipil_pc;	/* codi de finalitzacio de partida */
@@ -326,16 +317,16 @@ void * moure_pilota(void * null)
       pil_pc += pil_vc; 
     }
     win_retard(retard);
-    pthread_mutex_lock(&mutex);
+    waitS(id_semafor);
     cont = result;
     win_update();
-    pthread_mutex_unlock(&mutex);
+    signalS(id_semafor);
   }while((result == -1) && (*fin !=1));
 
-  pthread_mutex_lock(&mutex);
+  waitS(id_semafor);
   num_pelotas--;
   *memPelotas = num_pelotas;
-  pthread_mutex_unlock(&mutex);
+  signalS(id_semafor);
   return((void*)0);
 }
 
@@ -344,28 +335,28 @@ void * mou_paleta_usuari(void * null)
 {
 
   do{
-    pthread_mutex_lock(&mutex);
+    waitS(id_semafor);
     tecla = win_gettec();
-    pthread_mutex_unlock(&mutex); 
+    signalS(id_semafor);
     if ((tecla == TEC_AVALL) && (win_quincar(ipu_pf+l_pal,ipu_pc) == ' '))
     {
-      pthread_mutex_lock(&mutex);
+      waitS(id_semafor);
       win_escricar(ipu_pf,ipu_pc,' ',NO_INV);	   /* esborra primer bloc */
       ipu_pf++;					   /* actualitza posicio */
       win_escricar(ipu_pf+l_pal-1,ipu_pc,'0',INVERS); /* impri. ultim bloc */
-      pthread_mutex_unlock(&mutex);
+      signalS(id_semafor);
     }
     if ((tecla == TEC_AMUNT) && (win_quincar(ipu_pf-1,ipu_pc) == ' '))
     {
-      pthread_mutex_lock(&mutex);
+      waitS(id_semafor);
       win_escricar(ipu_pf+l_pal-1,ipu_pc,' ',NO_INV); /* esborra ultim bloc */
       ipu_pf--;					    /* actualitza posicio */
       win_escricar(ipu_pf,ipu_pc,'0',INVERS);	    /* imprimeix primer bloc */
-      pthread_mutex_unlock(&mutex);
+      signalS(id_semafor);
     }
-    pthread_mutex_lock(&mutex);
+    waitS(id_semafor);
     win_update();
-    pthread_mutex_unlock(&mutex);
+    signalS(id_semafor);
   }while((tecla != TEC_RETURN) && (num_pelotas > 0));
   *fin = 1;
   return((void *)0);
@@ -379,43 +370,39 @@ void * marcador(void * null){
   char strin[100];
   int resultado;
 
-  pthread_mutex_lock(&mutex);
+  waitS(id_semafor);
   sprintf(strin,"Goles Usuario = %d Goles Ordenador = %d Pelotas:%d",
 	golesUsuario,golesOrdenador,num_pelotas);
   win_escristr(strin);
-  pthread_mutex_unlock(&mutex);
+  signalS(id_semafor);
 
   do{
-    pthread_mutex_lock(&mutex);
+    waitS(id_semafor);
     resultado = cont;
-    pthread_mutex_unlock(&mutex);
+    signalS(id_semafor);
     if(resultado > 0){
       //marca el usuario
       golesUsuario++;
-      pthread_mutex_lock(&mutex);
-
+      waitS(id_semafor);
       sprintf(strin,"Goles Usuario = %d Goles Ordenador = %d Pelotas:%d",
 	    golesUsuario,golesOrdenador,num_pelotas);
       win_escristr(strin);
       cont = -1;
       ipil_pc = *mem_ipopc[num_opo-1]-2;
       ipil_pf = *mem_ipopf[num_opo-1]+3;
-
-      pthread_mutex_unlock(&mutex);
+      signalS(id_semafor);
     }
     if(resultado == 0){
       //marca el ordenador
       golesOrdenador++;
-      pthread_mutex_lock(&mutex);
-
+      waitS(id_semafor);
       sprintf(strin,"Goles Usuario = %d\tGoles Ordenador = %d Pelotas:%d",
 	    golesUsuario,golesOrdenador,num_pelotas);
       win_escristr(strin);
       cont = -1;
       ipil_pc = ipu_pc+1;
       ipil_pf = ipu_pf+2;
-
-      pthread_mutex_unlock(&mutex);
+      signalS(id_semafor);
     }
     //win_update();
   }while((*fin != 1) && (num_pelotas > 0));
@@ -428,7 +415,7 @@ void * marcador(void * null){
 int main(int n_args, const char *ll_args[])
 {
   /* variables locals */
-  int t, id_numPelotas, id_fin, id_semafor;
+  int t, id_numPelotas, id_fin;
   char a1[20], a2[20], a3[20], a4[20], a5[20], a6[20], a7[20], a8[20], a9[20], a10[20], a11[20], a12[20], a13[20];
 
   if ((n_args != 3) && (n_args != 4))
@@ -453,8 +440,6 @@ int main(int n_args, const char *ll_args[])
   if (inicialitza_joc() != 0) /* intenta crear el taulell de joc */
     exit(4);                  /* aborta si hi ha algun problema amb taulell */
   /********** bucle principal del joc **********/ 
-
-  pthread_mutex_init(&mutex,NULL); //inicializar semaforo
 
   //convertir datos del campo en strin para procesos hijos
   sprintf(a2, "%i", id_win);
@@ -519,8 +504,6 @@ int main(int n_args, const char *ll_args[])
     printf("t: %d\n",t);
   }
   win_fi();
-
-  pthread_mutex_destroy(&mutex);//destruir semaforo
 
   //liberar memoria
   for(int i = 0; i < num_opo; i++){

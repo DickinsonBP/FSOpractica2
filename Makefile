@@ -1,4 +1,4 @@
-all : winsuport2.o tennis4 pal_ord4 memoria.o
+all : winsuport2.o winsuport.o semafor.o tennis0 tennis1 tennis2 tennis3 tennis4 pal_ord4 pal_ord3 memoria.o
 
 winsuport.o : winsuport.c winsuport.h
 	gcc -Wall -c winsuport.c -o winsuport.o
@@ -30,4 +30,4 @@ semafor.o : semafor.c semafor.h
 	gcc -c -Wall semafor.c -o semafor.o 
 	
 clean: 
-	rm winsuport2.o tennis4 pal_ord4 memoria.o
+	rm winsuport2.o winsuport.o semafor.o tennis0 tennis1 tennis2 tennis3 tennis4 pal_ord4 pal_ord3 memoria.o

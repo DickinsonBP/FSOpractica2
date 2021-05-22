@@ -250,10 +250,10 @@ void * moure_pilota(void * null)
   int f_h, c_h, result;
   char rh,rv,rd;
   result = -1;		/* inicialment suposem que la pilota no surt */
-  //printf("genera pelota\n");
 
-  pthread_mutex_lock(&mutex);
+  
   pil_pf = ipil_pf; pil_pc = ipil_pc;	/* fixar valor real posicio pilota */
+  pthread_mutex_lock(&mutex);
   win_escricar(ipil_pf, ipil_pc, '.',INVERS);	/* dibuix inicial pilota */
   pthread_mutex_unlock(&mutex);
 
@@ -267,9 +267,9 @@ void * moure_pilota(void * null)
     {		/* si posicio hipotetica no coincideix amb la pos. actual */
       if (f_h != ipil_pf)		/* provar rebot vertical */
       {	
-        pthread_mutex_lock(&mutex);
+        /*pthread_mutex_lock(&mutex);*/
         rv = win_quincar(f_h,ipil_pc);	/* veure si hi ha algun obstacle */
-        pthread_mutex_unlock(&mutex);
+        /*pthread_mutex_unlock(&mutex);*/
         if (rv != ' ')			/* si no hi ha res */
         {   
           pil_vf = -pil_vf;		/* canvia velocitat vertical */
@@ -278,9 +278,9 @@ void * moure_pilota(void * null)
       }
       if (c_h != ipil_pc)		/* provar rebot horitzontal */
       {	
-        pthread_mutex_lock(&mutex);
+        /*pthread_mutex_lock(&mutex);*/
         rh = win_quincar(ipil_pf,c_h);	/* veure si hi ha algun obstacle */
-        pthread_mutex_unlock(&mutex);
+        /*pthread_mutex_unlock(&mutex);*/
         if (rh != ' ')			/* si no hi ha res */
         {    
           pil_vc = -pil_vc;		/* canvia velocitat horitzontal */
@@ -289,9 +289,9 @@ void * moure_pilota(void * null)
       }
       if ((f_h != ipil_pf) && (c_h != ipil_pc))	/* provar rebot diagonal */
       {	
-        pthread_mutex_lock(&mutex);
+        /*pthread_mutex_lock(&mutex);*/
         rd = win_quincar(f_h,c_h);
-        pthread_mutex_unlock(&mutex);
+        /*pthread_mutex_unlock(&mutex);*/
         if (rd != ' ')				/* si no hi ha obstacle */
         {    
           pil_vf = -pil_vf; pil_vc = -pil_vc;	/* canvia velocitats */
@@ -299,10 +299,8 @@ void * moure_pilota(void * null)
           c_h = pil_pc+pil_vc;		/* actualitza posicio entera */
         }
       }
-      pthread_mutex_lock(&mutex);
       if (win_quincar(f_h,c_h) == ' ')	/* verificar posicio definitiva */
       {						/* si no hi ha obstacle */
-      pthread_mutex_unlock(&mutex);
         pthread_mutex_lock(&mutex);
         win_escricar(ipil_pf,ipil_pc,' ',NO_INV);	/* esborra pilota */
         pthread_mutex_unlock(&mutex);
@@ -328,6 +326,7 @@ void * moure_pilota(void * null)
     cont = result;
     win_update();
     pthread_mutex_unlock(&mutex);
+    
   }while((result == -1) && (*fin !=1));
 
   pthread_mutex_lock(&mutex);
@@ -388,7 +387,7 @@ void * marcador(void * null){
     resultado = cont;
     pthread_mutex_unlock(&mutex);
     if(resultado > 0){
-      //marca el usuario
+      /*marca el usuario*/
       golesUsuario++;
       pthread_mutex_lock(&mutex);
 
@@ -402,11 +401,11 @@ void * marcador(void * null){
       pthread_mutex_unlock(&mutex);
     }
     if(resultado == 0){
-      //marca el ordenador
+      /*marca el ordenador*/
       golesOrdenador++;
       pthread_mutex_lock(&mutex);
 
-      sprintf(strin,"Goles Usuario = %d\tGoles Ordenador = %d Pelotas:%d",
+      sprintf(strin,"Goles Usuario = %d Goles Ordenador = %d Pelotas:%d",
 	    golesUsuario,golesOrdenador,num_pelotas);
       win_escristr(strin);
       cont = -1;
@@ -415,7 +414,7 @@ void * marcador(void * null){
 
       pthread_mutex_unlock(&mutex);
     }
-    //win_update();
+
   }while((*fin != 1) && (num_pelotas > 0));
   
   return ((void *)0);
@@ -443,18 +442,18 @@ int main(int n_args, const char *ll_args[])
     retard = 100;
     num_pelotas = atoi(ll_args[2]);
   }else{
-    //por defecto
+    /*por defecto*/
     num_pelotas =1;
     retard = 100;
   }
-  //printf("Inicializa juego llamada en main: %d\n",inicialitza_joc());
+
   if (inicialitza_joc() != 0) /* intenta crear el taulell de joc */
     exit(4);                  /* aborta si hi ha algun problema amb taulell */
   /********** bucle principal del joc **********/ 
 
   pthread_mutex_init(&mutex,NULL); //inicializar semaforo
 
-  //convertir datos del campo en strin para procesos hijos
+  /*convertir datos del campo en strin para procesos hijos*/
   sprintf(a2, "%i", id_win);
   sprintf(a3, "%i", n_fil);
   sprintf(a4, "%i", n_col);
@@ -476,7 +475,7 @@ int main(int n_args, const char *ll_args[])
   for(int i = 0; i < num_opo; i++){
     tpid[n] = fork();
     if(tpid[n] == 0){
-      //proceso hijo
+      /*proceso hijo*/
       sprintf(a1,"%i",(i+1));
       sprintf(a5, "%i", id_ipopf[i]);
       sprintf(a6, "%i", id_ipopc[i]);
@@ -484,7 +483,7 @@ int main(int n_args, const char *ll_args[])
       sprintf(a8, "%f", po_pf[i]);
       execlp("./pal_ord3","pal_ord3",a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, (char*)0);
     }else if(tpid[n] > 0){
-      //proceso padre
+      /*proceso padre*/
       n++;
    }
   }
@@ -495,14 +494,13 @@ int main(int n_args, const char *ll_args[])
   int hayPelota = 0;
   while(num_pelotas > 0){
     if(cont == -1 && hayPelota == 0){
-      //generar nueva pelota
+      /*generar nueva pelota*/
       hayPelota=1;  
       pthread_create(&tid[2],NULL,moure_pilota,NULL);
     }else{
-      //hay gol
+      /*hay gol*/
       pthread_join(tid[2],(void **)&t);
       hayPelota=0;
-      //*memPelotas=num_pelotas;
     }
     win_update();
     win_retard(20);
@@ -514,14 +512,7 @@ int main(int n_args, const char *ll_args[])
   }
   win_fi();
 
-  pthread_mutex_destroy(&mutex);//destruir semaforo
-
-  for(int i = 0; i < num_opo; i++){
-    elim_mem(id_ipopf[i]);
-    elim_mem(id_ipopc[i]);
-  }
-  elim_mem(id_numPelotas);
-  elim_mem(id_fin);
+  pthread_mutex_destroy(&mutex);/*destruir semaforo*/
 
   if (tecla == TEC_RETURN){
     printf("S'ha aturat el joc amb la tecla RETURN!\n");
@@ -536,5 +527,13 @@ int main(int n_args, const char *ll_args[])
       printf("EMPATEEEEEEEEEEEEEE!!!!\n");
     }
   }
+
+  /*for(int i = 0; i < num_opo; i++){
+    elim_mem(id_ipopf[i]);
+    elim_mem(id_ipopc[i]);
+  }
+  elim_mem(id_numPelotas);
+  elim_mem(id_fin);*/
+
   return (0);
 }
