@@ -72,8 +72,10 @@ int main(int n_args, char *ll_args[])
     {
       if (v_pal > 0.0) /* verificar moviment cap avall */
       {
+        waitS(id_semafor);
         if (win_quincar(f_h + l_pal - 1, *p_ipopf) == ' ') /* si no hi ha obstacle */
         {
+          signalS(id_semafor);
           waitS(id_semafor);
           win_escricar(*p_ipopf, *p_ipopc, ' ', NO_INV); /* esborra primer bloc */
           signalS(id_semafor);
@@ -84,14 +86,17 @@ int main(int n_args, char *ll_args[])
           signalS(id_semafor);
         }
         else{
+          signalS(id_semafor);
           /* si hi ha obstacle, canvia el sentit del moviment */
           v_pal = -v_pal;   
         }
       }
       else /* verificar moviment cap amunt */
       {
+        waitS(id_semafor);
         if (win_quincar(f_h, *p_ipopc) == ' ') /* si no hi ha obstacle */
         {
+          signalS(id_semafor);
           waitS(id_semafor);
           win_escricar(*p_ipopf + l_pal - 1, *p_ipopc, ' ', NO_INV); /* esbo. ultim bloc */
           signalS(id_semafor);
@@ -102,6 +107,7 @@ int main(int n_args, char *ll_args[])
           signalS(id_semafor);
         }
         else{
+          signalS(id_semafor);
           /* si hi ha obstacle, canvia el sentit del moviment */
           v_pal = -v_pal;
         } 
