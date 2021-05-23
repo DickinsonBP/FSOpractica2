@@ -6,7 +6,6 @@
 #include "memoria.h"
 #include "winsuport2.h"
 #include "semafor.h"
-#include "missatge.h"
 
 #include <pthread.h>
 
