@@ -6,6 +6,7 @@
 #include "memoria.h"
 #include "winsuport2.h"
 #include "semafor.h"
+#include "missatge.h"
 
 #include <pthread.h>
 
@@ -16,7 +17,7 @@ int main(int n_args, char *ll_args[])
     float v_pal, po_pf;
     void *p_win;
 
-    if (n_args < 14)
+    if (n_args < 15)
     {
       fprintf(stderr, "error parametros\n");
       exit(0);

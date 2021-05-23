@@ -27,7 +27,7 @@ memoria.o : memoria.c memoria.h
 	gcc -c -Wall memoria.c -o memoria.o 
 
 semafor.o : semafor.c semafor.h
-	gcc -c -Wall semafor.c -o semafor.o 
+	gcc -c -Wall semafor.c -o semafor.o
 	
 clean: 
 	rm winsuport2.o winsuport.o semafor.o tennis0 tennis1 tennis2 tennis3 tennis4 pal_ord4 pal_ord3 memoria.o

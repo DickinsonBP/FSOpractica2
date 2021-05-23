@@ -61,6 +61,7 @@
 #include "memoria.h"
 #include "winsuport2.h"
 #include "semafor.h"
+#include "missatge.h"
 
 #include <pthread.h>
 
@@ -396,7 +397,7 @@ void * marcador(void * null){
       //marca el ordenador
       golesOrdenador++;
       waitS(id_semafor);
-      sprintf(strin,"Goles Usuario = %d\tGoles Ordenador = %d Pelotas:%d",
+      sprintf(strin,"Goles Usuario = %d Goles Ordenador = %d Pelotas:%d",
 	    golesUsuario,golesOrdenador,num_pelotas);
       win_escristr(strin);
       cont = -1;
@@ -416,7 +417,7 @@ int main(int n_args, const char *ll_args[])
 {
   /* variables locals */
   int t, id_numPelotas, id_fin;
-  char a1[20], a2[20], a3[20], a4[20], a5[20], a6[20], a7[20], a8[20], a9[20], a10[20], a11[20], a12[20], a13[20];
+  char a1[20], a2[20], a3[20], a4[20], a5[20], a6[20], a7[20], a8[20], a9[20], a10[20], a11[20], a12[20], a13[20], a14[20];
 
   if ((n_args != 3) && (n_args != 4))
   {
@@ -473,7 +474,7 @@ int main(int n_args, const char *ll_args[])
       sprintf(a6, "%i", id_ipopc[i]);
       sprintf(a7, "%f", v_pal[i]);
       sprintf(a8, "%f", po_pf[i]);
-      execlp("./pal_ord4","pal_ord4",a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, (char*)0);
+      execlp("./pal_ord4","pal_ord4",a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, (char*)0);
     }else if(tpid[n] > 0){
       //proceso padre
       n++;
@@ -499,9 +500,8 @@ int main(int n_args, const char *ll_args[])
     win_retard(20);
   }
 
-  for(int i = 0; i < num_opo + 2; i++){
+  for(int i = 0; i < 2; i++){
     pthread_join(tid[i],(void **)&t);
-    printf("t: %d\n",t);
   }
   win_fi();
 

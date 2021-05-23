@@ -506,9 +506,8 @@ int main(int n_args, const char *ll_args[])
     win_retard(20);
   }
 
-  for(int i = 0; i < num_opo + 2; i++){
+  for(int i = 0; i < 2; i++){
     pthread_join(tid[i],(void **)&t);
-    printf("t: %d\n",t);
   }
   win_fi();
 
